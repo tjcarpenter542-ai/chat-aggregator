@@ -7,6 +7,7 @@ import { FeedList } from './components/FeedList.jsx'
 import { ChatFeed } from './components/ChatFeed.jsx'
 import { TrendingPanel } from './components/TrendingPanel.jsx'
 import { SubCounter } from './components/SubCounter.jsx'
+import { ModPanel } from './components/ModPanel.jsx'
 import { LiveStatus } from './components/LiveStatus.jsx'
 import { VideoPanel } from './components/VideoPanel.jsx'
 import { CryptoTicker } from './components/CryptoTicker.jsx'
@@ -45,6 +46,7 @@ export default function App() {
           </div>
           <div className="header-right">
             <SubCounter />
+            <ModPanel />
             <button
               className={`stream-toggle${showStream ? ' is-active' : ''}`}
               onClick={() => setShowStream((s) => !s)}

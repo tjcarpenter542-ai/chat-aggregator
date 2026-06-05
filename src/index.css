@@ -1129,6 +1129,137 @@ body {
   white-space: nowrap;
 }
 
+/* ---------- Moderation activity (header pill + panel, styled like the sub roster) ---------- */
+.mod-counter-wrap {
+  position: relative;
+}
+.mod-counter {
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ff9aa0; /* moderation = muted alert red */
+  background: rgba(255, 77, 87, 0.1);
+  border: 1px solid rgba(255, 77, 87, 0.4);
+  border-radius: var(--pill);
+  padding: 4px 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.mod-counter:hover {
+  background: rgba(255, 77, 87, 0.18);
+  border-color: rgba(255, 77, 87, 0.6);
+}
+.mod-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  width: 340px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  padding: 8px;
+}
+.mod-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 4px 9px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+.mod-panel-count {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: #ff9aa0;
+  font-weight: 700;
+}
+/* Per-channel mod-action counts. */
+.mod-bychannel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--border);
+}
+.mod-chan-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 5px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--pill);
+  font-size: 0.74rem;
+}
+.mod-chan-n {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--text);
+}
+.mod-panel-empty {
+  padding: 16px 4px;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+}
+.mod-panel-list {
+  list-style: none;
+  margin: 0;
+  padding: 5px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mod-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 5px;
+  border-radius: var(--radius-sm);
+}
+.mod-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.mod-item-icon {
+  flex: none;
+  font-size: 0.9rem;
+}
+.mod-item-desc {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+/* Shared platform badge + channel name for both the per-channel rows and the action list. */
+.mod-badge {
+  flex: none;
+  font-size: 0.56rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #08090c;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.mod-chan {
+  flex: none;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
 /* ---------- Kick chatroom-id hint ---------- */
 /* flex-basis: 100% forces the hint onto its own line BELOW the input row (the form wraps),
    so it can't push the chatroom-id box out of alignment with the other controls. */

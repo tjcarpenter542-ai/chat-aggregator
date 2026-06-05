@@ -19,6 +19,27 @@ export function renderEmotes(content) {
   return content.replace(/\[emote:\d+:([^\]]+)\]/g, '$1')
 }
 
+// Map a Kick Pusher moderation event to a mod-action { action, target?, durationSec? }, or null.
+// Kick's payloads are undocumented and vary, so match on the event-name suffix (namespace churn)
+// and read fields defensively. A ban event is permanent; a timeout carries a `duration` in MINUTES
+// (normalized to seconds here to match Twitch's seconds). Message-deletion events may not name the
+// author — leave target undefined rather than guessing.
+export function kickEventToMod(eventName, data) {
+  if (/UserBanned/i.test(eventName)) {
+    const target = data?.user?.username || data?.username
+    if (!target) return null
+    const mins = data?.duration ?? null
+    const permanent = data?.permanent === true || (mins == null && data?.expires_at == null)
+    const durationSec = !permanent && mins != null ? Number(mins) * 60 || undefined : undefined
+    return { action: permanent ? 'ban' : 'timeout', target, durationSec }
+  }
+  if (/MessageDeleted/i.test(eventName)) {
+    const target = data?.message?.sender?.username || data?.sender?.username || data?.user?.username || undefined
+    return { action: 'delete', target }
+  }
+  return null
+}
+
 // Resolve a channel slug to its numeric chatroom id via the Vite dev proxy.
 // NOTE: Kick sits behind Cloudflare; this can 403 even through the proxy (TLS fingerprinting).
 // Callers should fall back to a manually-entered chatroom id when this throws.
@@ -149,6 +170,28 @@ export function createKickConnector({ channel, chatroomId, onMessage, onStatus }
             )
           } catch {
             /* ignore malformed sub payloads — must not break the feed */
+          }
+        }
+        // Moderation events: bans / timeouts / message deletions. Same defensive, fail-silent
+        // approach — must not break the feed. Attributed to the channel (Kick sends no mod name).
+        if (/UserBanned/i.test(frame.event) || /MessageDeleted/i.test(frame.event)) {
+          try {
+            const d = JSON.parse(frame.data)
+            const m = kickEventToMod(frame.event, d)
+            if (m) {
+              onMessage(
+                normalize({
+                  source: 'kick',
+                  channel,
+                  username: m.target || '',
+                  timestamp: Date.now(),
+                  type: 'mod',
+                  mod: m,
+                }),
+              )
+            }
+          } catch {
+            /* ignore malformed mod payloads — must not break the feed */
           }
         }
       },

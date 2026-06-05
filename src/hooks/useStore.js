@@ -27,3 +27,11 @@ export function useSubEvents() {
 export function useMessageSeq() {
   return useSyncExternalStore(store.subscribe, store.getMessageSeq)
 }
+
+export function useModEvents() {
+  return useSyncExternalStore(store.subscribe, store.getModEvents)
+}
+
+export function useModCounts() {
+  return useSyncExternalStore(store.subscribe, store.getModCounts)
+}

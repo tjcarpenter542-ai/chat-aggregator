@@ -1,10 +1,11 @@
 // Canonical message shape used everywhere:
-//   { source, channel, username, message, timestamp, id, type, sub? }
+//   { source, channel, username, message, timestamp, id, type, sub?, mod? }
 // `source` is the platform; `channel` is the specific streamer/feed it came from (used for inline
-// attribution and per-feed display filtering). `type` is 'chat' (default) or 'sub'; `sub` is
-// optional metadata for sub events. Every connector funnels its platform-specific payload through
-// this so the rest of the app never deals with per-platform quirks. Fills sane defaults.
-export function normalize({ source, channel, username, message, timestamp, id, type, sub }) {
+// attribution and per-feed display filtering). `type` is 'chat' (default), 'sub', or 'mod'; `sub`
+// and `mod` are optional metadata for those events (mod = { action, target, durationSec, detail }).
+// Every connector funnels its platform-specific payload through this so the rest of the app never
+// deals with per-platform quirks. Fills sane defaults.
+export function normalize({ source, channel, username, message, timestamp, id, type, sub, mod }) {
   const ts = Number(timestamp)
   const out = {
     source: String(source || 'unknown'),
@@ -13,9 +14,10 @@ export function normalize({ source, channel, username, message, timestamp, id, t
     message: String(message ?? '').slice(0, 1000),
     timestamp: Number.isFinite(ts) && ts > 0 ? ts : Date.now(),
     id: id ? String(id) : generateId(source),
-    type: type === 'sub' ? 'sub' : 'chat',
+    type: type === 'sub' ? 'sub' : type === 'mod' ? 'mod' : 'chat',
   }
   if (sub) out.sub = sub
+  if (mod) out.mod = mod
   return out
 }
 

@@ -62,6 +62,29 @@ export function parseIrcLine(line) {
   return { tags, prefix, command, params }
 }
 
+// Map a parsed CLEARCHAT/CLEARMSG line to a mod-action { action, target?, durationSec?, detail? },
+// or null if it's not a moderation command. CLEARCHAT with a target user is a timeout (when
+// `ban-duration` seconds is present) or a permanent ban (when absent); with no target it's a full
+// chat clear. CLEARMSG deletes one message (the `login` tag is its author). Anonymous IRC does NOT
+// reveal which moderator acted — these are attributed to the channel, never a named mod.
+export function clearToMod({ command, tags, params }) {
+  if (command === 'CLEARCHAT') {
+    const i = params.indexOf(' :')
+    const target = i === -1 ? '' : params.slice(i + 2)
+    if (!target) return { action: 'clear', detail: 'chat cleared' }
+    const banDur = tags['ban-duration']
+    if (banDur) return { action: 'timeout', target, durationSec: Number(banDur) || undefined }
+    return { action: 'ban', target }
+  }
+  if (command === 'CLEARMSG') {
+    const i = params.indexOf(' :')
+    const text = i === -1 ? '' : params.slice(i + 2)
+    const login = tags['login'] || ''
+    return { action: 'delete', target: login || undefined, detail: text ? text.slice(0, 80) : undefined }
+  }
+  return null
+}
+
 // Anonymous, read-only Twitch chat over IRC-WebSocket. No OAuth/token required — the
 // `justinfan<random>` nick grants read-only access. Raw WebSockets are not CORS-bound,
 // so this connects directly from the browser.
@@ -137,6 +160,26 @@ export function createTwitchConnector({ channel, onMessage, onStatus }) {
                   giftCount: tags['msg-param-mass-gift-count'] || undefined,
                   recipient: tags['msg-param-recipient-display-name'] || undefined,
                 },
+              }),
+            )
+          }
+          continue
+        }
+        // CLEARCHAT (timeout/ban/chat-clear) and CLEARMSG (single message deleted) -> mod events,
+        // attributed to the channel (anonymous IRC never says which moderator acted).
+        if (command === 'CLEARCHAT' || command === 'CLEARMSG') {
+          const m = clearToMod(parsed)
+          if (m) {
+            const refId = tags['target-msg-id'] || tags['target-user-id']
+            onMessage(
+              normalize({
+                source: 'twitch',
+                channel,
+                username: m.target || '',
+                timestamp: tags['tmi-sent-ts'] ? Number(tags['tmi-sent-ts']) : Date.now(),
+                id: refId ? `mod-${refId}-${tags['tmi-sent-ts'] || ''}` : undefined,
+                type: 'mod',
+                mod: m,
               }),
             )
           }

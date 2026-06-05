@@ -15,6 +15,10 @@ function createStore() {
   let subEventsView = subEvents // stable reference between sub events (for useSyncExternalStore)
   let messageSeq = 0 // monotonic count of every message ingested — powers the paused "N new"
   // counter, which must stay accurate even after the cap evicts rows (a list-length delta can't).
+  let modEvents = [] // session roster of moderation actions (timeouts / bans / deletes)
+  let modEventsView = modEvents
+  let modCounts = {} // per-feed "source:channel" -> count of mod actions this session
+  let modCountsView = modCounts
 
   const feeds = new Map() // key "source:channel" -> { source, channel, status, detail, connector }
   let feedsView = [] // immutable projection of `feeds` for getFeeds()
@@ -66,6 +70,15 @@ function createStore() {
   }
 
   function ingest(msg) {
+    if (msg.type === 'mod') {
+      // Mod actions feed ONLY the moderation view — not the chat feed or the keyword engine.
+      modEvents = modEvents.concat(msg)
+      modEventsView = modEvents
+      const key = `${msg.source}:${msg.channel}`
+      modCounts = { ...modCounts, [key]: (modCounts[key] || 0) + 1 }
+      modCountsView = modCounts
+      return
+    }
     messageSeq += 1
     pending.push(msg)
     if (msg.type === 'sub') {
@@ -89,6 +102,10 @@ function createStore() {
     subCount = 0
     subEvents = []
     subEventsView = subEvents // new reference so getSubEvents reports the change to the roster
+    modEvents = []
+    modEventsView = modEvents
+    modCounts = {}
+    modCountsView = modCounts
     notify()
   }
 
@@ -156,6 +173,8 @@ function createStore() {
     getSubCount: () => subCount,
     getSubEvents: () => subEventsView,
     getMessageSeq: () => messageSeq,
+    getModEvents: () => modEventsView,
+    getModCounts: () => modCountsView,
     addFeed,
     removeFeed,
     clear,
