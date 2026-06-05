@@ -78,14 +78,17 @@ function createStore() {
     }
   }
 
-  // Reset the feed + engine to a true clean slate. Active feeds stay connected; the session
-  // sub counter is intentionally preserved.
+  // Reset the feed + engine to a true clean slate. Active feeds stay connected, but EVERYTHING
+  // session-scoped is wiped — including the sub counter and roster (so Clear means a full reset).
   function clear() {
     messages = []
     messagesView = messages
     pending = []
     engine.reset()
     snapshot = { keywords: [], sentiment: 0, spikes: [], bannerSpike: null, total: 0 }
+    subCount = 0
+    subEvents = []
+    subEventsView = subEvents // new reference so getSubEvents reports the change to the roster
     notify()
   }
 
