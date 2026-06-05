@@ -20,6 +20,7 @@ export function TrendingPanel() {
     <aside className="trending-panel">
       <div className="trending-head">
         <span className="trending-title">Trending</span>
+        <span className="trending-sub">Most-used words &amp; emojis · live across all chats</span>
       </div>
       <div className="trending-words">
         {keywords.length === 0 ? (
