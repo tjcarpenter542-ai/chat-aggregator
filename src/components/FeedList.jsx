@@ -1,4 +1,4 @@
-import { useFeeds } from '../hooks/useStore.js'
+import { useFeeds, useChannelStats } from '../hooks/useStore.js'
 import { store } from '../lib/chatStore.js'
 import { sourceColor, sourceLabel } from '../config.js'
 
@@ -18,6 +18,7 @@ const STATUS_COLORS = {
 // message regardless. A Kick "lookup-failed" feed shows a hint to re-add with a manual chatroom ID.
 export function FeedList({ activeFilter, onFilter }) {
   const feeds = useFeeds()
+  const stats = useChannelStats()
   if (feeds.length === 0) return null
 
   return (
@@ -32,6 +33,9 @@ export function FeedList({ activeFilter, onFilter }) {
       </button>
       {feeds.map((f) => {
         const active = activeFilter === f.key
+        const st = stats[f.key]
+        const rate = st ? Math.round(st.rate) : 0
+        const total = st ? st.total : 0
         return (
           <span
             key={f.key}
@@ -53,6 +57,9 @@ export function FeedList({ activeFilter, onFilter }) {
                 {sourceLabel(f.source)}
               </span>
               <span className="feed-chan">{f.channel}</span>
+              <span className="feed-rate" title={`${total.toLocaleString()} messages this session`}>
+                {rate}/min
+              </span>
             </button>
             {f.status === 'lookup-failed' && (
               <span className="feed-warn" title={f.detail}>

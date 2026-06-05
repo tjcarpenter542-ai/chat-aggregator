@@ -35,3 +35,7 @@ export function useModEvents() {
 export function useModCounts() {
   return useSyncExternalStore(store.subscribe, store.getModCounts)
 }
+
+export function useChannelStats() {
+  return useSyncExternalStore(store.subscribe, store.getChannelStats)
+}

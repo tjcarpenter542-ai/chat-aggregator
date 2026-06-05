@@ -711,6 +711,20 @@ body {
 .feed-chan {
   color: var(--text-dim);
 }
+/* Live per-channel message rate (built from real messages flowing through the store). */
+.feed-rate {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+  color: var(--up);
+  font-weight: 700;
+}
+.feed-rate::before {
+  content: '·';
+  margin-right: 6px;
+  color: var(--text-faint);
+  font-weight: 400;
+}
 .feed-warn {
   color: var(--gold);
   font-size: 0.74rem;

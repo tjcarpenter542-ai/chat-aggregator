@@ -19,6 +19,10 @@ function createStore() {
   let modEventsView = modEvents
   let modCounts = {} // per-feed "source:channel" -> count of mod actions this session
   let modCountsView = modCounts
+  // Live per-channel message activity, built ONLY from real messages flowing through the store
+  // (no external/viewer APIs): a monotonic total + a smoothed messages-per-minute rate.
+  const channelStats = new Map() // "source:channel" -> { total, lastTotal, rate }
+  let channelStatsView = {} // plain { key: { total, rate } } for useSyncExternalStore
 
   const feeds = new Map() // key "source:channel" -> { source, channel, status, detail, connector }
   let feedsView = [] // immutable projection of `feeds` for getFeeds()
@@ -81,6 +85,14 @@ function createStore() {
     }
     messageSeq += 1
     pending.push(msg)
+    // Per-channel monotonic message total (drives the live rate; survives cap eviction).
+    const ckey = `${msg.source}:${msg.channel}`
+    let cs = channelStats.get(ckey)
+    if (!cs) {
+      cs = { total: 0, lastTotal: 0, rate: 0 }
+      channelStats.set(ckey, cs)
+    }
+    cs.total += 1
     if (msg.type === 'sub') {
       subCount += 1 // surfaced via getSubCount; propagated on the next flush notify
       // New array ref so getSubEvents reports a change; subs are rare, so the O(n) copy is fine.
@@ -106,6 +118,8 @@ function createStore() {
     modEventsView = modEvents
     modCounts = {}
     modCountsView = modCounts
+    channelStats.clear()
+    channelStatsView = {}
     notify()
   }
 
@@ -147,18 +161,37 @@ function createStore() {
       /* ignore */
     }
     feeds.delete(key)
+    channelStats.delete(key)
     rebuildFeedsView()
     notify()
+  }
+
+  // Smoothed per-channel messages-per-minute from the monotonic per-channel totals. EMA over the
+  // per-tick delta so the number is responsive but not jittery, and decays toward 0 when a chat
+  // goes quiet. Rebuilt into a fresh view object each tick so subscribers see the live update.
+  const RATE_ALPHA = 0.5
+  function updateChannelRates() {
+    const view = {}
+    for (const [key, st] of channelStats) {
+      const delta = st.total - st.lastTotal
+      st.lastTotal = st.total
+      const inst = delta * (60_000 / TICK_MS) // delta-per-tick -> per-minute
+      st.rate = RATE_ALPHA * inst + (1 - RATE_ALPHA) * st.rate
+      view[key] = { total: st.total, rate: st.rate }
+    }
+    channelStatsView = view
   }
 
   // Batched flush of incoming messages -> React.
   setInterval(flush, FLUSH_MS)
 
-  // Engine tick: age out old records, recompute the one snapshot both views read, publish.
+  // Engine tick: age out old records, recompute the one snapshot both views read, refresh the
+  // per-channel rates, publish.
   setInterval(() => {
     const now = Date.now()
     engine.tick(now)
     snapshot = engine.snapshot(now)
+    updateChannelRates()
     notify()
   }, TICK_MS)
 
@@ -175,6 +208,7 @@ function createStore() {
     getMessageSeq: () => messageSeq,
     getModEvents: () => modEventsView,
     getModCounts: () => modCountsView,
+    getChannelStats: () => channelStatsView,
     addFeed,
     removeFeed,
     clear,
