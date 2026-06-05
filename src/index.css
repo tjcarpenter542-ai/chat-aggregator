@@ -234,9 +234,11 @@ body {
   font-size: 0.62rem;
   color: var(--up);
 }
-/* Words stack top-to-bottom; the panel scrolls vertically (no horizontal scrollbar). */
+/* Words stack top-to-bottom and size to their CONTENT (flex-grow:0) so the legend sits directly
+   beneath the last word instead of being pinned to the panel bottom with a gap above it. When the
+   list is taller than the panel it shrinks (flex-shrink:1 + min-height:0) and scrolls vertically. */
 .trending-words {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
