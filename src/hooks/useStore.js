@@ -23,3 +23,7 @@ export function useSubCount() {
 export function useSubEvents() {
   return useSyncExternalStore(store.subscribe, store.getSubEvents)
 }
+
+export function useMessageSeq() {
+  return useSyncExternalStore(store.subscribe, store.getMessageSeq)
+}

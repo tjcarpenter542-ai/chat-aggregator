@@ -13,6 +13,8 @@ function createStore() {
   let subCount = 0 // session sub-event counter (NOT reset by clear())
   let subEvents = [] // session roster of normalized sub events; the SubCounter panel reads this
   let subEventsView = subEvents // stable reference between sub events (for useSyncExternalStore)
+  let messageSeq = 0 // monotonic count of every message ingested — powers the paused "N new"
+  // counter, which must stay accurate even after the cap evicts rows (a list-length delta can't).
 
   const feeds = new Map() // key "source:channel" -> { source, channel, status, detail, connector }
   let feedsView = [] // immutable projection of `feeds` for getFeeds()
@@ -64,6 +66,7 @@ function createStore() {
   }
 
   function ingest(msg) {
+    messageSeq += 1
     pending.push(msg)
     if (msg.type === 'sub') {
       subCount += 1 // surfaced via getSubCount; propagated on the next flush notify
@@ -149,6 +152,7 @@ function createStore() {
     getSnapshot: () => snapshot,
     getSubCount: () => subCount,
     getSubEvents: () => subEventsView,
+    getMessageSeq: () => messageSeq,
     addFeed,
     removeFeed,
     clear,
