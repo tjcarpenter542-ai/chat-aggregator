@@ -14,6 +14,15 @@ import {
 const TOKEN_RE = /[a-z0-9']+/g
 // Cashtags like $BTC, $SOL, $ZEC — captured BEFORE punctuation stripping and kept UPPERCASE.
 const CASHTAG_RE = /\$[A-Za-z]{1,6}\b/g
+// Emoji — matched as whole sequences so skin-tone modifiers, variation selectors, ZWJ sequences
+// (e.g. 👨‍👩‍👧), regional-indicator flags (🇺🇸) and keycaps (1️⃣) each count as ONE trending token.
+// Captured BEFORE word tokenization because emojis aren't word chars and would otherwise be
+// dropped. The `u` flag is required for \p{Extended_Pictographic} and astral-plane codepoints.
+const EMOJI_RE =
+  /[\u{1F1E6}-\u{1F1FF}]{2}|[0-9#*]\uFE0F?\u20E3|\p{Extended_Pictographic}(?:\uFE0F|[\u{1F3FB}-\u{1F3FF}])?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|[\u{1F3FB}-\u{1F3FF}])?)*/gu
+// Token-level emoji check (no `g` flag, so repeated .test() stays stateless).
+const EMOJI_DETECT_RE = /[\u{1F1E6}-\u{1F1FF}]|\p{Extended_Pictographic}|\u20E3/u
+const isEmoji = (t) => EMOJI_DETECT_RE.test(t)
 
 // Tokenize a chat message into cleaned candidate tokens. Stopword filtering is applied LATER
 // (at count time) so sentiment can still see common words like "lol"/"wtf".
@@ -22,11 +31,17 @@ export function tokenize(text) {
   const out = []
   // 1) Cashtags first, before punctuation stripping; preserve as uppercase "$SYMBOL" and
   //    remove from the text so they aren't double-counted as a plain lowercase word.
-  const stripped = String(text).replace(CASHTAG_RE, (m) => {
+  let stripped = String(text).replace(CASHTAG_RE, (m) => {
     out.push('$' + m.slice(1).toUpperCase())
     return ' '
   })
-  // 2) Normal tokens: lowercase, drop <2 chars and pure numbers.
+  // 2) Emojis next (also before the word step): preserve each as its own token — emoji spam is a
+  //    real "whole chat reacted" signal — and blank it out so the word matcher never sees it.
+  stripped = stripped.replace(EMOJI_RE, (m) => {
+    out.push(m)
+    return ' '
+  })
+  // 3) Normal tokens: lowercase, drop <2 chars and pure numbers.
   const matches = stripped.toLowerCase().match(TOKEN_RE)
   if (matches) {
     for (let t of matches) {
@@ -39,9 +54,11 @@ export function tokenize(text) {
   return out
 }
 
-// Cashtags ($...) always count and are never stopwords; other tokens must clear the length
-// floor and not be a stopword.
-const isKeyword = (t) => t.startsWith('$') || (t.length >= MIN_TOKEN_LEN && !STOPWORDS.has(t))
+// Cashtags ($...) and emojis always count and are never stopwords / length-filtered; other tokens
+// must clear the length floor and not be a stopword. Word check sits before isEmoji() so most
+// tokens never touch the emoji regex.
+const isKeyword = (t) =>
+  t.startsWith('$') || (t.length >= MIN_TOKEN_LEN && !STOPWORDS.has(t)) || isEmoji(t)
 
 // One rolling-window engine. addMessage() feeds it; snapshot() returns BOTH the
 // trending-words/sentiment view AND the cross-platform spikes — computed once, read twice.
