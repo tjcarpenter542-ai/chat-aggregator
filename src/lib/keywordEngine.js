@@ -6,6 +6,7 @@ import {
   SPIKE_RATIO,
   MIN_SPIKE_COUNT,
   MIN_SPIKE_SOURCES,
+  SPIKE_BANNER_MS,
   TOP_N,
   MIN_TOKEN_LEN,
 } from './constants.js'
@@ -49,6 +50,9 @@ export function createEngine() {
   let records = []
   // previous snapshot's current-window counts, for detecting which words climbed.
   let prevKeywordCounts = new Map()
+  // latched top spike for the banner: { spike, expiresAt }. Held so a one-tick spike stays
+  // on screen for SPIKE_BANNER_MS instead of flickering away on the next snapshot.
+  let heldSpike = null
 
   function addMessage(msg) {
     const tokens = tokenize(msg.message)
@@ -70,6 +74,7 @@ export function createEngine() {
   function reset() {
     records = []
     prevKeywordCounts = new Map()
+    heldSpike = null
   }
 
   function snapshot(now) {
@@ -150,7 +155,18 @@ export function createEngine() {
     }
     spikes.sort((a, b) => b.ratio - a.ratio)
 
-    return { keywords, sentiment, spikes, total: records.length }
+    // Banner hold: keep the top spike available for SPIKE_BANNER_MS so a single-tick spike stays
+    // readable. A live spike refreshes the hold (and a different word replaces it instantly);
+    // once spikes subside the last one lingers until it expires. `more` = other concurrent spikes.
+    const topSpike = spikes.length ? { ...spikes[0], more: spikes.length - 1 } : null
+    if (topSpike) {
+      heldSpike = { spike: topSpike, expiresAt: now + SPIKE_BANNER_MS }
+    } else if (heldSpike && now >= heldSpike.expiresAt) {
+      heldSpike = null
+    }
+    const bannerSpike = topSpike || (heldSpike ? heldSpike.spike : null)
+
+    return { keywords, sentiment, spikes, bannerSpike, total: records.length }
   }
 
   return { addMessage, tick, snapshot, reset }

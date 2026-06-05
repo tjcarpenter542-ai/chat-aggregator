@@ -6,6 +6,7 @@ export const BASELINE_MS = 300_000 // baseline window: last 5 min (for spike com
 export const SPIKE_RATIO = 3.0 // current rate must be >= this * baseline rate to spike
 export const MIN_SPIKE_COUNT = 4 // ...and the word must appear at least this many times now
 export const MIN_SPIKE_SOURCES = 2 // ...across at least this many distinct platforms
+export const SPIKE_BANNER_MS = 9000 // hold a fired spike in the snapshot this long for the banner (or until a new spike replaces it)
 export const TOP_N = 12 // number of trending words shown in the keyword bar
 export const TICK_MS = 1000 // engine tick + snapshot cadence (1s)
 export const MIN_TOKEN_LEN = 3 // ignore tokens shorter than this for trending/spikes

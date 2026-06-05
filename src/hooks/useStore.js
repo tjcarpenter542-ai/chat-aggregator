@@ -19,3 +19,7 @@ export function useEngineSnapshot() {
 export function useSubCount() {
   return useSyncExternalStore(store.subscribe, store.getSubCount)
 }
+
+export function useSubEvents() {
+  return useSyncExternalStore(store.subscribe, store.getSubEvents)
+}

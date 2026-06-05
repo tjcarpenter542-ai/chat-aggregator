@@ -58,20 +58,20 @@ export function ChannelInput() {
         onChange={(e) => setChannel(e.target.value)}
       />
       {source === 'kick' && (
-        <span className="ci-kick">
-          <input
-            type="text"
-            className="chatroom-id"
-            placeholder="Chatroom ID (required)"
-            value={chatroomId}
-            onChange={(e) => setChatroomId(e.target.value)}
-            title="Kick auto-lookup is unreliable behind Cloudflare, so the numeric chatroom ID is required."
-          />
-          <span className="ci-hint">Find it at b3ck.com/kick/info.</span>
-        </span>
+        <input
+          type="text"
+          className="chatroom-id"
+          placeholder="Chatroom ID (required)"
+          value={chatroomId}
+          onChange={(e) => setChatroomId(e.target.value)}
+          title="Kick auto-lookup is unreliable behind Cloudflare, so the numeric chatroom ID is required."
+        />
       )}
       <button type="submit">Add feed</button>
       {error && <span className="ci-error">{error}</span>}
+      {source === 'kick' && (
+        <span className="ci-hint">Find the chatroom ID at b3ck.com/kick/info.</span>
+      )}
     </form>
   )
 }

@@ -9,8 +9,10 @@ import { MAX_MESSAGES, FLUSH_MS, TICK_MS } from './constants.js'
 function createStore() {
   let messages = [] // sorted by timestamp asc, capped to MAX_MESSAGES
   let pending = [] // incoming buffer, flushed every FLUSH_MS
-  let snapshot = { keywords: [], sentiment: 0, spikes: [], total: 0 }
+  let snapshot = { keywords: [], sentiment: 0, spikes: [], bannerSpike: null, total: 0 }
   let subCount = 0 // session sub-event counter (NOT reset by clear())
+  let subEvents = [] // session roster of normalized sub events; the SubCounter panel reads this
+  let subEventsView = subEvents // stable reference between sub events (for useSyncExternalStore)
 
   const feeds = new Map() // key "source:channel" -> { source, channel, status, detail, connector }
   let feedsView = [] // immutable projection of `feeds` for getFeeds()
@@ -65,6 +67,9 @@ function createStore() {
     pending.push(msg)
     if (msg.type === 'sub') {
       subCount += 1 // surfaced via getSubCount; propagated on the next flush notify
+      // New array ref so getSubEvents reports a change; subs are rare, so the O(n) copy is fine.
+      subEvents = subEvents.concat(msg)
+      subEventsView = subEvents
     } else {
       engine.addMessage(msg) // only chat feeds the keyword/sentiment engine
     }
@@ -77,7 +82,7 @@ function createStore() {
     messagesView = messages
     pending = []
     engine.reset()
-    snapshot = { keywords: [], sentiment: 0, spikes: [], total: 0 }
+    snapshot = { keywords: [], sentiment: 0, spikes: [], bannerSpike: null, total: 0 }
     notify()
   }
 
@@ -143,6 +148,7 @@ function createStore() {
     getFeeds: () => feedsView,
     getSnapshot: () => snapshot,
     getSubCount: () => subCount,
+    getSubEvents: () => subEventsView,
     addFeed,
     removeFeed,
     clear,
