@@ -9,6 +9,7 @@ import { TrendingPanel } from './components/TrendingPanel.jsx'
 import { SubCounter } from './components/SubCounter.jsx'
 import { LiveStatus } from './components/LiveStatus.jsx'
 import { VideoPanel } from './components/VideoPanel.jsx'
+import { CryptoTicker } from './components/CryptoTicker.jsx'
 import { store } from './lib/chatStore.js'
 import { getDefaultChannels } from './config.js'
 
@@ -68,6 +69,8 @@ export default function App() {
         </div>
         <TrendingPanel />
       </div>
+
+      <CryptoTicker />
     </div>
   )
 }

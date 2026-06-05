@@ -856,6 +856,66 @@ body {
   }
 }
 
+/* ---------- Crypto price ticker (thin footer bar) ---------- */
+.ticker {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg-elev-2), var(--bg-elev));
+  overflow-x: auto;
+  scrollbar-width: none;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.ticker::-webkit-scrollbar {
+  display: none;
+}
+.ticker-label {
+  flex: none;
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.ticker-items {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  white-space: nowrap;
+}
+.ticker-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 0.78rem;
+}
+.ticker-sym {
+  font-family: var(--font-ui);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--text);
+}
+.ticker-price {
+  color: var(--text-dim);
+}
+.ticker-change {
+  font-weight: 700;
+}
+.ticker-item.dir-up .ticker-change {
+  color: var(--up);
+}
+.ticker-item.dir-down .ticker-change {
+  color: var(--down);
+}
+.ticker-item.dir-flat .ticker-change {
+  color: var(--text-dim);
+}
+
 /* ---------- Trending: climb pulse + category legend ---------- */
 .kw-chip {
   transform-origin: center bottom;

@@ -41,24 +41,29 @@ export function tokenize(text) {
     out.push(m)
     return ' '
   })
-  // 3) Normal tokens: lowercase, drop <2 chars and pure numbers.
+  // 3) Normal tokens: lowercase, drop <2 chars. Pure numbers ARE kept — chat numbers like
+  //    "100" / "1000" / "140k" should trend (timestamps are a separate field, never tokenized).
   const matches = stripped.toLowerCase().match(TOKEN_RE)
   if (matches) {
     for (let t of matches) {
       t = t.replace(/^'+|'+$/g, '') // trim stray apostrophes
       if (t.length < 2) continue
-      if (/^\d+$/.test(t)) continue
       out.push(t)
     }
   }
   return out
 }
 
-// Cashtags ($...) and emojis always count and are never stopwords / length-filtered; other tokens
-// must clear the length floor and not be a stopword. Word check sits before isEmoji() so most
-// tokens never touch the emoji regex.
+// Cashtags ($...), numbers, and emojis always count and are never stopwords / length-filtered;
+// other tokens must clear the length floor and not be a stopword. The word check sits first so
+// most tokens never touch the number/emoji tests. A "number token" is anything starting with a
+// digit ("100", "1000", "50x", "140k") — chat figures trend like words.
+const isNumberToken = (t) => /^\d/.test(t)
 const isKeyword = (t) =>
-  t.startsWith('$') || (t.length >= MIN_TOKEN_LEN && !STOPWORDS.has(t)) || isEmoji(t)
+  t.startsWith('$') ||
+  (t.length >= MIN_TOKEN_LEN && !STOPWORDS.has(t)) ||
+  isNumberToken(t) ||
+  isEmoji(t)
 
 // One rolling-window engine. addMessage() feeds it; snapshot() returns BOTH the
 // trending-words/sentiment view AND the cross-platform spikes — computed once, read twice.
