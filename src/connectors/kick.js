@@ -5,7 +5,19 @@ import { createReconnectingSocket } from '../lib/reconnectingSocket.js'
 // open DevTools > Network > WS, filter "pusher", and copy the new app key from the URL here.
 const KICK_PUSHER_KEY = '32cbd69e4b950bf97679'
 const KICK_PUSHER_URL = `wss://ws-us2.pusher.com/app/${KICK_PUSHER_KEY}?protocol=7&client=js&version=8.4.0&flash=false`
-const CHAT_EVENT = 'App\\Chat\\Events\\ChatMessageEvent'
+
+// Kick renames the Pusher chat event from time to time — it has shipped both
+// `App\Chat\Events\ChatMessageEvent` (older) and `App\Events\ChatMessageEvent` (current).
+// Match on the suffix so we survive that namespace churn.
+export const isChatMessageEvent = (event) => /(^|\\)ChatMessageEvent$/.test(event)
+
+// Kick message `content` embeds emotes as `[emote:<id>:<name>]`. Replace each token with just
+// its bare name so the feed shows readable text AND the keyword engine counts the emote name
+// as a normal word (e.g. `[emote:2383630:Jordanw]` -> `Jordanw`).
+export function renderEmotes(content) {
+  if (!content) return ''
+  return content.replace(/\[emote:\d+:([^\]]+)\]/g, '$1')
+}
 
 // Resolve a channel slug to its numeric chatroom id via the Vite dev proxy.
 // NOTE: Kick sits behind Cloudflare; this can 403 even through the proxy (TLS fingerprinting).
@@ -88,7 +100,7 @@ export function createKickConnector({ channel, chatroomId, onMessage, onStatus }
           ws.send(JSON.stringify({ event: 'pusher:pong', data: {} }))
           return
         }
-        if (frame.event === CHAT_EVENT) {
+        if (isChatMessageEvent(frame.event)) {
           // IMPORTANT: frame.data is itself a JSON STRING — parse it again.
           let d
           try {
@@ -100,7 +112,7 @@ export function createKickConnector({ channel, chatroomId, onMessage, onStatus }
             normalize({
               source: 'kick',
               username: d?.sender?.username,
-              message: d?.content,
+              message: renderEmotes(d?.content),
               timestamp: parseKickTimestamp(d?.created_at),
               id: d?.id,
             }),
