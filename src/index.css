@@ -810,6 +810,46 @@ body {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
 }
 
+/* Hover-to-pause status pill (top-center of the feed). Non-interactive — pointer-events:none so
+   it never interferes with the hover that drives the pause. */
+.feed-pause {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 13px;
+  background: rgba(12, 15, 20, 0.9);
+  border: 1px solid var(--border);
+  border-radius: var(--pill);
+  color: var(--text-dim);
+  font-size: 0.73rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  pointer-events: none;
+  animation: feed-pause-in 0.18s ease-out;
+}
+.feed-pause-icon {
+  color: var(--gold);
+  font-size: 0.8rem;
+}
+@keyframes feed-pause-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 /* ---------- Trending: climb pulse + category legend ---------- */
 .kw-chip {
   transform-origin: center bottom;
