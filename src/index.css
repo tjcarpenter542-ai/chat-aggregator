@@ -22,8 +22,6 @@
   --down-dim: rgba(255, 77, 87, 0.14);
   --gold: #f0b90b; /* wordmark + subs accent */
   --accent: #1fd286; /* primary action ("go") */
-  --live: #ff4d57; /* broadcast on-air red — intentionally its OWN token, not --down's "negative" */
-  --live-dim: rgba(255, 77, 87, 0.6);
 
   --radius: 8px;
   --radius-sm: 6px;
@@ -31,6 +29,7 @@
   --shadow-pop: 0 14px 34px rgba(0, 0, 0, 0.6);
 
   --font-ui: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif; /* serif wordmark */
   --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
 
   color-scheme: dark;
@@ -96,6 +95,14 @@ body {
   z-index: 10;
   background: linear-gradient(180deg, var(--bg-elev), var(--bg));
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 12px 26px -18px rgba(0, 0, 0, 0.9);
+}
+/* On-air channel-bug accent strip across the very top. */
+.app-top::before {
+  content: '';
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, var(--up), var(--gold) 58%, var(--down));
 }
 
 /* ---------- Body: chat feed (left, flexible) + trending right rail ---------- */
@@ -111,6 +118,7 @@ body {
   flex-direction: column;
   min-height: 0;
   border-left: 1px solid var(--border);
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.025), -10px 0 22px -18px rgba(0, 0, 0, 0.85);
   background: linear-gradient(180deg, var(--bg-elev), var(--bg));
 }
 .trending-head {
@@ -172,9 +180,11 @@ body {
   align-items: center;
   gap: 11px;
   padding: 9px 16px;
-  background: linear-gradient(90deg, rgba(255, 77, 87, 0.2), rgba(240, 185, 11, 0.08));
+  background: linear-gradient(90deg, rgba(255, 77, 87, 0.26), rgba(240, 185, 11, 0.06) 72%);
   border-bottom: 1px solid rgba(255, 77, 87, 0.45);
+  border-left: 3px solid var(--down);
   font-size: 0.92rem;
+  letter-spacing: 0.005em;
   animation: spike-in 0.25s ease-out;
 }
 @keyframes spike-in {
@@ -229,6 +239,17 @@ body {
 .kw-sent-mood {
   font-weight: 800;
 }
+/* up/down arrows on the mood word — Market-Watch ticker cue. */
+.chat-mood.mood-up .kw-sent-mood::before {
+  content: '▲';
+  margin-right: 4px;
+  font-size: 0.72em;
+}
+.chat-mood.mood-down .kw-sent-mood::before {
+  content: '▼';
+  margin-right: 4px;
+  font-size: 0.72em;
+}
 .kw-sent-meter {
   position: relative;
   width: 120px;
@@ -247,6 +268,7 @@ body {
   display: block;
   height: 100%;
   border-radius: var(--pill);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
   transition: width 0.4s ease, background-color 0.4s ease;
 }
 .kw-sent-value {
@@ -295,7 +317,9 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-soft);
 }
 .app-brand {
   display: flex;
@@ -319,12 +343,20 @@ body {
 }
 .app-title {
   margin: 0;
-  font-size: 1.4rem;
+  font-family: var(--font-display);
+  font-size: 1.85rem;
   font-weight: 800;
-  letter-spacing: -0.015em;
-  text-transform: uppercase;
-  line-height: 1;
+  letter-spacing: 0.005em;
+  line-height: 1.02;
   color: var(--text);
+}
+.app-tagline {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  color: var(--gold);
 }
 .app-subtitle {
   font-size: 0.64rem;
@@ -341,10 +373,10 @@ body {
   align-items: center;
   gap: 6px;
   flex: none;
-  padding: 3px 9px;
-  border: 1px solid var(--live-dim);
+  padding: 3px 10px;
+  border: 1px solid var(--border);
   border-radius: var(--pill);
-  color: var(--live);
+  color: var(--text-dim);
   font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -354,18 +386,27 @@ body {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--live);
+  background: var(--text-faint);
+}
+/* Live: green, pulsing. Offline: grey, static. Driven by real feed status in LiveStatus.jsx. */
+.app-live.is-live {
+  color: var(--up);
+  border-color: rgba(31, 210, 134, 0.55);
+  background: rgba(31, 210, 134, 0.08);
+}
+.app-live.is-live .app-live-dot {
+  background: var(--up);
   animation: live-pulse 1.8s ease-out infinite;
 }
 @keyframes live-pulse {
   0% {
-    box-shadow: 0 0 0 0 var(--live-dim);
+    box-shadow: 0 0 0 0 rgba(31, 210, 134, 0.6);
   }
   70% {
-    box-shadow: 0 0 0 6px rgba(255, 77, 87, 0);
+    box-shadow: 0 0 0 6px rgba(31, 210, 134, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 77, 87, 0);
+    box-shadow: 0 0 0 0 rgba(31, 210, 134, 0);
   }
 }
 .header-right {

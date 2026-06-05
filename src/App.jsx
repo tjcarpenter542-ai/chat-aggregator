@@ -7,6 +7,7 @@ import { FeedList } from './components/FeedList.jsx'
 import { ChatFeed } from './components/ChatFeed.jsx'
 import { TrendingPanel } from './components/TrendingPanel.jsx'
 import { SubCounter } from './components/SubCounter.jsx'
+import { LiveStatus } from './components/LiveStatus.jsx'
 import { store } from './lib/chatStore.js'
 import { getDefaultChannels } from './config.js'
 
@@ -32,12 +33,10 @@ export default function App() {
             <img src={logo} className="app-logo" alt="Market Bubble logo" />
             <div className="app-wordmark">
               <h1 className="app-title">Market Bubble</h1>
+              <span className="app-tagline">&ldquo;Invest in Yourself&rdquo;</span>
               <span className="app-subtitle">Live Chat Intelligence · Twitch · Kick · X</span>
             </div>
-            <span className="app-live">
-              <span className="app-live-dot" />
-              Live
-            </span>
+            <LiveStatus />
           </div>
           <div className="header-right">
             <SubCounter />
