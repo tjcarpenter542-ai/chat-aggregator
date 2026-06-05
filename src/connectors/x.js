@@ -17,7 +17,8 @@ export function createXConnector({ channel, onStatus }) {
   }
 
   // Enabled, but intentionally still a no-op: we will not call a paid API from the browser
-  // or ship a token. Wire a server-side proxy to make this live.
+  // or ship a token. It reports status 'open' but emits NO messages — a silent X feed is
+  // expected, not a bug. Wire a server-side proxy to make this live.
   console.warn(
     `[x] VITE_X_ENABLED=true for "${channel}", but the X connector is a stub. ` +
       'Add a server-side proxy to https://api.twitter.com/2/tweets/search/recent ' +
