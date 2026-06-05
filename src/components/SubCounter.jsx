@@ -87,6 +87,11 @@ export function SubCounter() {
                     >
                       {sourceLabel(e.source)}
                     </span>
+                    {e.channel && (
+                      <span className="sub-panel-chan" style={{ color: sourceColor(e.source) }}>
+                        {e.channel}
+                      </span>
+                    )}
                     <span className="sub-panel-user" style={{ color: sourceColor(e.source) }}>
                       {e.username}
                     </span>
