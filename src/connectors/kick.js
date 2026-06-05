@@ -111,6 +111,7 @@ export function createKickConnector({ channel, chatroomId, onMessage, onStatus }
           onMessage(
             normalize({
               source: 'kick',
+              channel,
               username: d?.sender?.username,
               message: renderEmotes(d?.content),
               timestamp: parseKickTimestamp(d?.created_at),
@@ -138,6 +139,7 @@ export function createKickConnector({ channel, chatroomId, onMessage, onStatus }
             onMessage(
               normalize({
                 source: 'kick',
+                channel,
                 username: user,
                 message,
                 timestamp: Date.now(),

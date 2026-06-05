@@ -636,16 +636,60 @@ body {
   gap: 8px;
   margin-top: 12px;
 }
+/* "All" (merged) filter chip — active by default. */
+.feed-all {
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.feed-all:hover {
+  color: var(--text);
+  border-color: #2f3744;
+}
+.feed-all.is-active {
+  color: #04130d;
+  background: var(--up);
+  border-color: var(--up);
+}
+/* Feed pills double as click-to-filter controls (pill body filters; × removes). */
 .feed-pill {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 7px 4px 10px;
   border: 1px solid var(--border);
   border-left-width: 3px;
   border-radius: var(--radius-sm);
   background: var(--bg-elev);
   font-size: 0.8rem;
+  overflow: hidden;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+.feed-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px 4px 10px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.feed-pill.is-active {
+  background: var(--bg-elev-2);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+/* When a single feed is focused, dim the others so the active filter is obvious. */
+.feed-list-bar[data-filtered='true'] .feed-pill:not(.is-active) {
+  opacity: 0.5;
 }
 .feed-dot {
   width: 8px;
@@ -671,7 +715,7 @@ body {
   cursor: pointer;
   font-size: 1.1rem;
   line-height: 1;
-  padding: 0 2px;
+  padding: 3px 8px 3px 4px;
   transition: color 0.15s ease;
 }
 .feed-remove:hover {
@@ -705,6 +749,24 @@ body {
 }
 .msg-row:hover {
   background: rgba(255, 255, 255, 0.025);
+}
+/* Per-message attribution: platform badge + channel name (e.g. "TWITCH · cented"). */
+.msg-src {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: none;
+}
+.msg-chan {
+  font-weight: 700;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.msg-chan::before {
+  content: '·';
+  margin-right: 6px;
+  color: var(--text-faint);
+  font-weight: 400;
 }
 .msg-badge {
   flex: none;

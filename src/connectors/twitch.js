@@ -124,6 +124,7 @@ export function createTwitchConnector({ channel, onMessage, onStatus }) {
             onMessage(
               normalize({
                 source: 'twitch',
+                channel,
                 username: tags['display-name'] || tags['login'] || 'someone',
                 message: tags['system-msg'] || userComment || 'subscribed',
                 timestamp: tags['tmi-sent-ts'] ? Number(tags['tmi-sent-ts']) : Date.now(),
@@ -150,6 +151,7 @@ export function createTwitchConnector({ channel, onMessage, onStatus }) {
         onMessage(
           normalize({
             source: 'twitch',
+            channel,
             username: tags['display-name'] || nickFromPrefix,
             message: text,
             timestamp: tags['tmi-sent-ts'] ? Number(tags['tmi-sent-ts']) : Date.now(),

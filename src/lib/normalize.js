@@ -1,12 +1,14 @@
 // Canonical message shape used everywhere:
-//   { source, username, message, timestamp, id, type, sub? }
-// `type` is 'chat' (default) or 'sub'; `sub` is optional metadata for sub events. Every
-// connector funnels its platform-specific payload through this so the rest of the app never
-// deals with per-platform quirks. Fills sane defaults for missing timestamp/id.
-export function normalize({ source, username, message, timestamp, id, type, sub }) {
+//   { source, channel, username, message, timestamp, id, type, sub? }
+// `source` is the platform; `channel` is the specific streamer/feed it came from (used for inline
+// attribution and per-feed display filtering). `type` is 'chat' (default) or 'sub'; `sub` is
+// optional metadata for sub events. Every connector funnels its platform-specific payload through
+// this so the rest of the app never deals with per-platform quirks. Fills sane defaults.
+export function normalize({ source, channel, username, message, timestamp, id, type, sub }) {
   const ts = Number(timestamp)
   const out = {
     source: String(source || 'unknown'),
+    channel: channel ? String(channel).slice(0, 80) : '',
     username: String(username || 'anonymous').slice(0, 64),
     message: String(message ?? '').slice(0, 1000),
     timestamp: Number.isFinite(ts) && ts > 0 ? ts : Date.now(),

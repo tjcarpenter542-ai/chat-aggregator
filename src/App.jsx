@@ -14,6 +14,7 @@ import { getDefaultChannels } from './config.js'
 
 export default function App() {
   const [showStream, setShowStream] = useState(false)
+  const [filter, setFilter] = useState(null) // feed key "source:channel" to focus on, or null = all
 
   useEffect(() => {
     // Seed default feeds once on mount. addFeed dedupes by key, so StrictMode's
@@ -57,13 +58,13 @@ export default function App() {
           </div>
         </div>
         <ChannelInput />
-        <FeedList />
+        <FeedList activeFilter={filter} onFilter={setFilter} />
       </section>
 
       <div className="app-body">
         <div className="feed-col">
           {showStream && <VideoPanel onClose={() => setShowStream(false)} />}
-          <ChatFeed />
+          <ChatFeed filter={filter} />
         </div>
         <TrendingPanel />
       </div>

@@ -9,8 +9,26 @@ function formatTime(ts) {
   })
 }
 
-// One chat line. Sub events get a distinct glowing treatment (gold border, "🎉 NEW SUB"
-// badge, emphasized username); regular chat is [source badge] time username: message.
+// Platform badge + channel attribution (e.g. "TWITCH · cented"), so with multiple channels — even
+// two on the same platform — you instantly see whose chat a message is. Hover shows platform · channel.
+function Attribution({ source, channel }) {
+  const color = sourceColor(source)
+  return (
+    <span className="msg-src" title={`${sourceLabel(source)}${channel ? ` · ${channel}` : ''}`}>
+      <span className="msg-badge" style={{ backgroundColor: color }}>
+        {sourceLabel(source)}
+      </span>
+      {channel && (
+        <span className="msg-chan" style={{ color }}>
+          {channel}
+        </span>
+      )}
+    </span>
+  )
+}
+
+// One chat line. Sub events get a distinct glowing treatment (gold border, "🎉 NEW SUB" badge,
+// emphasized username); regular chat is [platform · channel] time username: message.
 function MessageRowBase({ msg }) {
   const color = sourceColor(msg.source)
 
@@ -18,9 +36,7 @@ function MessageRowBase({ msg }) {
     return (
       <div className="msg-row msg-sub">
         <span className="msg-sub-badge">🎉 NEW SUB</span>
-        <span className="msg-badge" style={{ backgroundColor: color }}>
-          {sourceLabel(msg.source)}
-        </span>
+        <Attribution source={msg.source} channel={msg.channel} />
         <span className="msg-user msg-sub-user" style={{ color }}>
           {msg.username}
         </span>
@@ -31,9 +47,7 @@ function MessageRowBase({ msg }) {
 
   return (
     <div className="msg-row">
-      <span className="msg-badge" style={{ backgroundColor: color }}>
-        {sourceLabel(msg.source)}
-      </span>
+      <Attribution source={msg.source} channel={msg.channel} />
       <span className="msg-time">{formatTime(msg.timestamp)}</span>
       <span className="msg-user" style={{ color }}>
         {msg.username}
