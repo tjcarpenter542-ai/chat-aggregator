@@ -28,9 +28,17 @@ export default function App() {
 
       <section className="app-controls">
         <div className="app-title-row">
-          <img src={logo} className="app-logo" alt="Market Bubble logo" />
-          <h1 className="app-title">Market Bubble</h1>
-          <span className="app-subtitle">Live Chat Intelligence — Twitch · Kick · X</span>
+          <div className="app-brand">
+            <img src={logo} className="app-logo" alt="Market Bubble logo" />
+            <div className="app-wordmark">
+              <h1 className="app-title">Market Bubble</h1>
+              <span className="app-subtitle">Live Chat Intelligence · Twitch · Kick · X</span>
+            </div>
+            <span className="app-live">
+              <span className="app-live-dot" />
+              Live
+            </span>
+          </div>
           <div className="header-right">
             <SubCounter />
             <button className="clear-btn" onClick={() => store.clear()} title="Clear the feed and reset the keyword engine (feeds stay connected)">
