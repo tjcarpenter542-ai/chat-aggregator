@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import logo from './assets/market-bubble-logo.jpg'
 import { SpikeBanner } from './components/SpikeBanner.jsx'
 import { ChatMood } from './components/ChatMood.jsx'
@@ -8,10 +8,13 @@ import { ChatFeed } from './components/ChatFeed.jsx'
 import { TrendingPanel } from './components/TrendingPanel.jsx'
 import { SubCounter } from './components/SubCounter.jsx'
 import { LiveStatus } from './components/LiveStatus.jsx'
+import { VideoPanel } from './components/VideoPanel.jsx'
 import { store } from './lib/chatStore.js'
 import { getDefaultChannels } from './config.js'
 
 export default function App() {
+  const [showStream, setShowStream] = useState(false)
+
   useEffect(() => {
     // Seed default feeds once on mount. addFeed dedupes by key, so StrictMode's
     // double-invoke in dev won't create duplicate connectors.
@@ -40,6 +43,14 @@ export default function App() {
           </div>
           <div className="header-right">
             <SubCounter />
+            <button
+              className={`stream-toggle${showStream ? ' is-active' : ''}`}
+              onClick={() => setShowStream((s) => !s)}
+              aria-pressed={showStream}
+              title="Watch the stream alongside chat"
+            >
+              📺 {showStream ? 'Hide stream' : 'Watch stream'}
+            </button>
             <button className="clear-btn" onClick={() => store.clear()} title="Clear the feed and reset the keyword engine (feeds stay connected)">
               Clear
             </button>
@@ -50,7 +61,10 @@ export default function App() {
       </section>
 
       <div className="app-body">
-        <ChatFeed />
+        <div className="feed-col">
+          {showStream && <VideoPanel onClose={() => setShowStream(false)} />}
+          <ChatFeed />
+        </div>
         <TrendingPanel />
       </div>
     </div>
