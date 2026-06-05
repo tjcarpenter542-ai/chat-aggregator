@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
 import logo from './assets/market-bubble-logo.jpg'
 import { SpikeBanner } from './components/SpikeBanner.jsx'
-import { KeywordBar } from './components/KeywordBar.jsx'
+import { ChatMood } from './components/ChatMood.jsx'
 import { ChannelInput } from './components/ChannelInput.jsx'
 import { FeedList } from './components/FeedList.jsx'
 import { ChatFeed } from './components/ChatFeed.jsx'
+import { TrendingPanel } from './components/TrendingPanel.jsx'
 import { SubCounter } from './components/SubCounter.jsx'
 import { store } from './lib/chatStore.js'
 import { getDefaultChannels } from './config.js'
@@ -22,7 +23,7 @@ export default function App() {
     <div className="app">
       <header className="app-top">
         <SpikeBanner />
-        <KeywordBar />
+        <ChatMood />
       </header>
 
       <section className="app-controls">
@@ -41,7 +42,10 @@ export default function App() {
         <FeedList />
       </section>
 
-      <ChatFeed />
+      <div className="app-body">
+        <ChatFeed />
+        <TrendingPanel />
+      </div>
     </div>
   )
 }

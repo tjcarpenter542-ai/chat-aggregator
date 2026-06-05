@@ -42,7 +42,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto;
   border-inline: 1px solid var(--border);
 }
@@ -53,6 +53,66 @@ body {
   z-index: 10;
   background: var(--bg-elev);
   border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Body: chat feed (left, flexible) + trending right rail ---------- */
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.trending-panel {
+  flex: none;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--border);
+  background: var(--bg-elev);
+}
+.trending-head {
+  flex: none;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.trending-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+/* Words stack top-to-bottom; the panel scrolls vertically (no horizontal scrollbar). */
+.trending-words {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+.trending-words::-webkit-scrollbar {
+  width: 6px;
+}
+.trending-words::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+/* Each chip becomes a full-width row: word on the left, count badge pinned right. */
+.trending-words .kw-chip {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+.kw-word {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---------- Spike banner ---------- */
@@ -89,35 +149,20 @@ body {
   font-size: 0.8rem;
 }
 
-/* ---------- Keyword / sentiment bar ---------- */
-.keyword-bar {
-  padding: 10px 14px 6px;
-}
-.kw-row {
+/* ---------- Chat Mood bar (pinned full-width at the top) ---------- */
+.chat-mood {
   display: flex;
   align-items: center;
-  gap: 16px;
-}
-.kw-words {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: baseline;
   gap: 12px;
+  padding: 8px 14px 10px;
+}
+.chat-mood .kw-sent-meter {
   flex: 1;
-  min-width: 0;
-  min-height: 30px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 2px;
-  scrollbar-width: thin;
+  width: auto;
+  max-width: 460px;
 }
-.kw-words::-webkit-scrollbar {
-  height: 6px;
-}
-.kw-words::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
-}
+
+/* ---------- Trending words (shared chip styles, used by the right rail) ---------- */
 .kw-empty {
   color: var(--text-dim);
   font-size: 0.85rem;
@@ -132,18 +177,12 @@ body {
   white-space: nowrap;
 }
 .kw-count {
+  flex: none;
   font-size: 0.65em;
   color: var(--text-dim);
   background: var(--bg-elev-2);
   border-radius: 999px;
   padding: 1px 6px;
-}
-.kw-sentiment {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  min-width: 120px;
 }
 .kw-sent-label {
   font-size: 0.72rem;
@@ -414,6 +453,7 @@ body {
 .feed {
   position: relative;
   flex: 1;
+  min-width: 0;
   min-height: 0;
 }
 .feed-empty {
@@ -498,11 +538,14 @@ body {
     filter: brightness(1);
   }
 }
+/* Category legend — sits at the bottom of the trending rail as a footer. */
 .kw-legend {
+  flex: none;
   display: flex;
   flex-wrap: wrap;
   gap: 4px 12px;
-  margin-top: 6px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
   font-size: 0.68rem;
   color: var(--text-dim);
 }
