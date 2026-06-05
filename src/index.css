@@ -856,22 +856,18 @@ body {
   }
 }
 
-/* ---------- Crypto price ticker (thin footer bar) ---------- */
+/* ---------- Crypto price ticker (thin scrolling footer tape) ---------- */
 .ticker {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 6px 16px;
+  gap: 14px;
+  padding: 6px 0 6px 16px;
   border-top: 1px solid var(--border);
   background: linear-gradient(180deg, var(--bg-elev-2), var(--bg-elev));
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: hidden;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-}
-.ticker::-webkit-scrollbar {
-  display: none;
 }
 .ticker-label {
   flex: none;
@@ -881,18 +877,55 @@ body {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--text-faint);
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
 }
-.ticker-items {
-  display: flex;
+.ticker-loading {
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  padding-left: 12px;
+}
+/* Viewport clips the tape and fades both edges for a polished broadcast look. */
+.ticker-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+}
+/* Two identical coin copies live in the track; translateX(0 -> -50%) loops seamlessly. The
+   animation is independent of data refresh, and pauses on hover so a viewer can read a coin. */
+.ticker-track {
+  display: inline-flex;
   align-items: center;
-  gap: 22px;
-  white-space: nowrap;
+  width: max-content;
+  will-change: transform;
+  animation: ticker-scroll 80s linear infinite;
+}
+.ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
 }
 .ticker-item {
   display: inline-flex;
   align-items: baseline;
   gap: 7px;
+  margin-right: 30px;
   font-size: 0.78rem;
+  white-space: nowrap;
 }
 .ticker-sym {
   font-family: var(--font-ui);
