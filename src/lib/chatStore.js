@@ -10,6 +10,7 @@ function createStore() {
   let messages = [] // sorted by timestamp asc, capped to MAX_MESSAGES
   let pending = [] // incoming buffer, flushed every FLUSH_MS
   let snapshot = { keywords: [], sentiment: 0, spikes: [], total: 0 }
+  let subCount = 0 // session sub-event counter (NOT reset by clear())
 
   const feeds = new Map() // key "source:channel" -> { source, channel, status, detail, connector }
   let feedsView = [] // immutable projection of `feeds` for getFeeds()
@@ -62,7 +63,22 @@ function createStore() {
 
   function ingest(msg) {
     pending.push(msg)
-    engine.addMessage(msg)
+    if (msg.type === 'sub') {
+      subCount += 1 // surfaced via getSubCount; propagated on the next flush notify
+    } else {
+      engine.addMessage(msg) // only chat feeds the keyword/sentiment engine
+    }
+  }
+
+  // Reset the feed + engine to a true clean slate. Active feeds stay connected; the session
+  // sub counter is intentionally preserved.
+  function clear() {
+    messages = []
+    messagesView = messages
+    pending = []
+    engine.reset()
+    snapshot = { keywords: [], sentiment: 0, spikes: [], total: 0 }
+    notify()
   }
 
   function addFeed({ source, channel, chatroomId } = {}) {
@@ -126,8 +142,10 @@ function createStore() {
     getMessages: () => messagesView,
     getFeeds: () => feedsView,
     getSnapshot: () => snapshot,
+    getSubCount: () => subCount,
     addFeed,
     removeFeed,
+    clear,
   }
 }
 

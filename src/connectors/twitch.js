@@ -3,6 +3,9 @@ import { createReconnectingSocket } from '../lib/reconnectingSocket.js'
 
 const TWITCH_WS = 'wss://irc-ws.chat.twitch.tv:443'
 
+// USERNOTICE msg-id values that represent a (re)subscription or gift sub.
+const SUB_MSG_IDS = new Set(['sub', 'resub', 'subgift', 'submysterygift'])
+
 // Unescape IRCv3 tag values in a SINGLE left-to-right pass: \s -> space, \: -> ;, \\ -> \,
 // \r, \n. A single pass avoids the mis-decode that sequential replaces produce (e.g. an
 // escaped backslash followed by 's' would otherwise be turned into a space).
@@ -110,6 +113,32 @@ export function createTwitchConnector({ channel, onMessage, onStatus }) {
         if (command === 'NOTICE') {
           const i = params.indexOf(' :')
           onStatus?.('error', i === -1 ? params : params.slice(i + 2))
+          continue
+        }
+        // USERNOTICE carries sub/resub/gift events. system-msg is the human-readable summary.
+        if (command === 'USERNOTICE') {
+          const msgId = tags['msg-id']
+          if (SUB_MSG_IDS.has(msgId)) {
+            const i = params.indexOf(' :')
+            const userComment = i === -1 ? '' : params.slice(i + 2)
+            onMessage(
+              normalize({
+                source: 'twitch',
+                username: tags['display-name'] || tags['login'] || 'someone',
+                message: tags['system-msg'] || userComment || 'subscribed',
+                timestamp: tags['tmi-sent-ts'] ? Number(tags['tmi-sent-ts']) : Date.now(),
+                id: tags['id'],
+                type: 'sub',
+                sub: {
+                  msgId,
+                  months: tags['msg-param-cumulative-months'] || tags['msg-param-months'] || undefined,
+                  tier: tags['msg-param-sub-plan'] || undefined,
+                  giftCount: tags['msg-param-mass-gift-count'] || undefined,
+                  recipient: tags['msg-param-recipient-display-name'] || undefined,
+                },
+              }),
+            )
+          }
           continue
         }
         if (command !== 'PRIVMSG') continue

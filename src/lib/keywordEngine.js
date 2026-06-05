@@ -11,32 +11,44 @@ import {
 } from './constants.js'
 
 const TOKEN_RE = /[a-z0-9']+/g
+// Cashtags like $BTC, $SOL, $ZEC — captured BEFORE punctuation stripping and kept UPPERCASE.
+const CASHTAG_RE = /\$[A-Za-z]{1,6}\b/g
 
-// Tokenize a chat message into cleaned candidate tokens (length >= 2, not a pure number).
-// Stopword filtering is applied LATER (at count time) so sentiment can still see common
-// words like "lol"/"wtf" while the trending view ignores them.
+// Tokenize a chat message into cleaned candidate tokens. Stopword filtering is applied LATER
+// (at count time) so sentiment can still see common words like "lol"/"wtf".
 export function tokenize(text) {
   if (!text) return []
-  const matches = text.toLowerCase().match(TOKEN_RE)
-  if (!matches) return []
   const out = []
-  for (let t of matches) {
-    t = t.replace(/^'+|'+$/g, '') // trim stray apostrophes
-    if (t.length < 2) continue
-    if (/^\d+$/.test(t)) continue
-    out.push(t)
+  // 1) Cashtags first, before punctuation stripping; preserve as uppercase "$SYMBOL" and
+  //    remove from the text so they aren't double-counted as a plain lowercase word.
+  const stripped = String(text).replace(CASHTAG_RE, (m) => {
+    out.push('$' + m.slice(1).toUpperCase())
+    return ' '
+  })
+  // 2) Normal tokens: lowercase, drop <2 chars and pure numbers.
+  const matches = stripped.toLowerCase().match(TOKEN_RE)
+  if (matches) {
+    for (let t of matches) {
+      t = t.replace(/^'+|'+$/g, '') // trim stray apostrophes
+      if (t.length < 2) continue
+      if (/^\d+$/.test(t)) continue
+      out.push(t)
+    }
   }
   return out
 }
 
-// A token counts toward trending/spikes only if it's long enough and not a stopword.
-const isKeyword = (t) => t.length >= MIN_TOKEN_LEN && !STOPWORDS.has(t)
+// Cashtags ($...) always count and are never stopwords; other tokens must clear the length
+// floor and not be a stopword.
+const isKeyword = (t) => t.startsWith('$') || (t.length >= MIN_TOKEN_LEN && !STOPWORDS.has(t))
 
 // One rolling-window engine. addMessage() feeds it; snapshot() returns BOTH the
 // trending-words/sentiment view AND the cross-platform spikes — computed once, read twice.
 export function createEngine() {
   // records: { ts, source, tokens: string[] }, retained for up to BASELINE_MS.
   let records = []
+  // previous snapshot's current-window counts, for detecting which words climbed.
+  let prevKeywordCounts = new Map()
 
   function addMessage(msg) {
     const tokens = tokenize(msg.message)
@@ -54,6 +66,12 @@ export function createEngine() {
     }
   }
 
+  // Wipe all retained messages — used by the "Clear" control for a true clean slate.
+  function reset() {
+    records = []
+    prevKeywordCounts = new Map()
+  }
+
   function snapshot(now) {
     const curStart = now - WINDOW_MS
     const baseStart = now - BASELINE_MS
@@ -68,11 +86,16 @@ export function createEngine() {
       const inCurrent = rec.ts >= curStart
       const inBaseline = !inCurrent && rec.ts >= baseStart
       if (!inCurrent && !inBaseline) continue
+
+      // Sentiment is deduped PER MESSAGE: a single "lol lol lol" counts once, so one spammer
+      // can't skew the lean. Track which lexicon words this record already contributed.
+      const posSeen = inCurrent ? new Set() : null
+      const negSeen = inCurrent ? new Set() : null
+
       for (const t of rec.tokens) {
         if (inCurrent) {
-          // sentiment is computed over the current window, including stopword-ish words
-          if (POSITIVE_WORDS.has(t)) pos++
-          else if (NEGATIVE_WORDS.has(t)) neg++
+          if (POSITIVE_WORDS.has(t)) posSeen.add(t)
+          else if (NEGATIVE_WORDS.has(t)) negSeen.add(t)
         }
         if (!isKeyword(t)) continue
         if (inCurrent) {
@@ -87,6 +110,11 @@ export function createEngine() {
           baseCounts.set(t, (baseCounts.get(t) || 0) + 1)
         }
       }
+
+      if (inCurrent) {
+        pos += posSeen.size
+        neg += negSeen.size
+      }
     }
 
     // --- View 1: trending words (top-N by current count, weight normalized to the max) ---
@@ -97,16 +125,17 @@ export function createEngine() {
       count,
       weight: count / maxCount,
       sources: [...(curSources.get(word) || [])],
+      // climbed vs the previous snapshot (incl. first appearance) -> the bar pulses it.
+      climbing: count > (prevKeywordCounts.get(word) ?? 0),
     }))
+    prevKeywordCounts = curCounts
 
     const sentiment = pos + neg === 0 ? 0 : (pos - neg) / (pos + neg)
 
     // --- View 2: cross-platform spikes (same data) ---
-    // Compare the word's current rate to its baseline rate. Must clear the ratio AND a
-    // minimum absolute count AND appear in >= MIN_SPIKE_SOURCES distinct platforms.
     const curSecs = WINDOW_MS / 1000
     const baseSecs = Math.max(1, (BASELINE_MS - WINDOW_MS) / 1000)
-    const epsilonRate = 1 / baseSecs // treat "never seen in baseline" as ~1 occurrence
+    const epsilonRate = 1 / baseSecs
     const spikes = []
     for (const [word, count] of curCounts) {
       if (count < MIN_SPIKE_COUNT) continue
@@ -124,5 +153,5 @@ export function createEngine() {
     return { keywords, sentiment, spikes, total: records.length }
   }
 
-  return { addMessage, tick, snapshot }
+  return { addMessage, tick, snapshot, reset }
 }

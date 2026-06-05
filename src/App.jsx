@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
+import logo from './assets/market-bubble-logo.jpg'
 import { SpikeBanner } from './components/SpikeBanner.jsx'
 import { KeywordBar } from './components/KeywordBar.jsx'
 import { ChannelInput } from './components/ChannelInput.jsx'
 import { FeedList } from './components/FeedList.jsx'
 import { ChatFeed } from './components/ChatFeed.jsx'
+import { SubCounter } from './components/SubCounter.jsx'
 import { store } from './lib/chatStore.js'
 import { getDefaultChannels } from './config.js'
 
@@ -25,8 +27,15 @@ export default function App() {
 
       <section className="app-controls">
         <div className="app-title-row">
-          <h1 className="app-title">Chat Aggregator</h1>
-          <span className="app-subtitle">Twitch · Kick · X — one live feed</span>
+          <img src={logo} className="app-logo" alt="Market Bubble logo" />
+          <h1 className="app-title">Market Bubble</h1>
+          <span className="app-subtitle">Live Chat Intelligence — Twitch · Kick · X</span>
+          <div className="header-right">
+            <SubCounter />
+            <button className="clear-btn" onClick={() => store.clear()} title="Clear the feed and reset the keyword engine (feeds stay connected)">
+              Clear
+            </button>
+          </div>
         </div>
         <ChannelInput />
         <FeedList />

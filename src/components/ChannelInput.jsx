@@ -19,14 +19,20 @@ export function ChannelInput() {
       return
     }
     const cid = chatroomId.trim()
-    if (source === 'kick' && cid && !/^\d+$/.test(cid)) {
-      setError('Chatroom ID must be numeric')
-      return
+    if (source === 'kick') {
+      if (!cid) {
+        setError('Chatroom ID is required for Kick')
+        return
+      }
+      if (!/^\d+$/.test(cid)) {
+        setError('Chatroom ID must be numeric')
+        return
+      }
     }
     const res = store.addFeed({
       source,
       channel: ch,
-      chatroomId: source === 'kick' && cid ? cid : undefined,
+      chatroomId: source === 'kick' ? cid : undefined,
     })
     if (!res.ok) {
       setError(res.error)
@@ -52,14 +58,17 @@ export function ChannelInput() {
         onChange={(e) => setChannel(e.target.value)}
       />
       {source === 'kick' && (
-        <input
-          type="text"
-          className="chatroom-id"
-          placeholder="chatroom ID (optional)"
-          value={chatroomId}
-          onChange={(e) => setChatroomId(e.target.value)}
-          title="If the auto-lookup is blocked by Cloudflare, paste the numeric chatroom ID here."
-        />
+        <span className="ci-kick">
+          <input
+            type="text"
+            className="chatroom-id"
+            placeholder="Chatroom ID (required)"
+            value={chatroomId}
+            onChange={(e) => setChatroomId(e.target.value)}
+            title="Kick auto-lookup is unreliable behind Cloudflare, so the numeric chatroom ID is required."
+          />
+          <span className="ci-hint">Find it at b3ck.com/kick/info.</span>
+        </span>
       )}
       <button type="submit">Add feed</button>
       {error && <span className="ci-error">{error}</span>}

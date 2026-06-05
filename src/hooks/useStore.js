@@ -15,3 +15,7 @@ export function useFeeds() {
 export function useEngineSnapshot() {
   return useSyncExternalStore(store.subscribe, store.getSnapshot)
 }
+
+export function useSubCount() {
+  return useSyncExternalStore(store.subscribe, store.getSubCount)
+}

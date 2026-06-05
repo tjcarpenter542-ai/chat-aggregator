@@ -117,6 +117,37 @@ export function createKickConnector({ channel, chatroomId, onMessage, onStatus }
               id: d?.id,
             }),
           )
+          return
+        }
+        // Best-effort sub events. Kick's subscription payloads vary and are undocumented, so
+        // parse defensively and fail SILENTLY if the shape doesn't match — must not break chat.
+        if (/Subscription/.test(frame.event)) {
+          try {
+            const d = JSON.parse(frame.data)
+            const user = d.username || d.user?.username || d.gifter_username || d.sender?.username
+            if (!user) return
+            const giftCount = Array.isArray(d.gifted_usernames)
+              ? d.gifted_usernames.length
+              : d.quantity || undefined
+            const months = d.months ?? d.cumulative_months ?? undefined
+            const message = giftCount
+              ? `gifted ${giftCount} sub${giftCount > 1 ? 's' : ''}`
+              : months
+                ? `subscribed · ${months} mo`
+                : 'subscribed'
+            onMessage(
+              normalize({
+                source: 'kick',
+                username: user,
+                message,
+                timestamp: Date.now(),
+                type: 'sub',
+                sub: { months, giftCount },
+              }),
+            )
+          } catch {
+            /* ignore malformed sub payloads — must not break the feed */
+          }
         }
       },
     })
