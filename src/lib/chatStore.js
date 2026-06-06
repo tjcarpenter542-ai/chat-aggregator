@@ -1,7 +1,7 @@
 import { CONNECTORS } from '../connectors/index.js'
 import { createEngine } from './keywordEngine.js'
 import { MAX_MESSAGES, MAX_ROSTER, FLUSH_MS, TICK_MS } from './constants.js'
-import { newRateState, tickRate, isRateReady } from './rateMeter.js'
+import { newRateState, recordMessage, tickRate, isRateReady } from './rateMeter.js'
 
 // Module-level store (a singleton). Holds the capped, timestamp-sorted message list, per-feed
 // statuses, and the latest engine snapshot. Connectors push messages in via `ingest`; we
@@ -21,8 +21,8 @@ function createStore() {
   let modCounts = {} // per-feed "source:channel" -> count of mod actions this session
   let modCountsView = modCounts
   // Live per-channel message activity, built ONLY from real messages flowing through the store
-  // (no external/viewer APIs): a monotonic total + a smoothed messages-per-minute rate.
-  const channelStats = new Map() // "source:channel" -> { total, lastTotal, rate, ticks }
+  // (no external/viewer APIs): a monotonic total + a sliding-window messages-per-minute rate.
+  const channelStats = new Map() // "source:channel" -> { total, meter } (meter = sliding-window rate)
   let channelStatsView = {} // plain { key: { total, rate, ready } } for useSyncExternalStore
 
   const feeds = new Map() // key "source:channel" -> { source, channel, status, detail, connector }
@@ -92,10 +92,11 @@ function createStore() {
     const ckey = `${msg.source}:${msg.channel}`
     let cs = channelStats.get(ckey)
     if (!cs) {
-      cs = { total: 0, lastTotal: 0, ...newRateState() }
+      cs = { total: 0, meter: newRateState() }
       channelStats.set(ckey, cs)
     }
     cs.total += 1
+    recordMessage(cs.meter, msg.timestamp) // feed the sliding-window msgs/min meter
     if (msg.type === 'sub') {
       subCount += 1 // exact running total (surfaced via getSubCount), independent of the capped roster
       // New array ref so getSubEvents reports a change; cap the roster tail so it can't grow forever.
@@ -170,20 +171,18 @@ function createStore() {
     notify()
   }
 
-  // Smoothed per-channel messages-per-minute from the monotonic per-channel totals. The rate meter
-  // (see rateMeter.js) EMA-smooths each full tick's delta so the number is responsive but not
-  // jittery, and decays toward 0 when a chat goes quiet — while skipping the first partial/burst
-  // tick and reporting `ready=false` during a short warm-up so the connect flurry can't masquerade
-  // as a sustained rate. Rebuilt into a fresh view object each tick so subscribers see the update.
-  function updateChannelRates() {
+  // Per-channel messages-per-minute as a TRUE sliding-window count: the rate meter (see
+  // rateMeter.js) holds each channel's recent message timestamps and, each tick, ages out anything
+  // older than 60s — the count that remains IS the msgs/min. It's a measured fact, not an
+  // extrapolation from a one-tick delta, so it moves smoothly (changing only as messages enter or
+  // leave the window) instead of bouncing. A short warm-up reports `ready=false` so a connect
+  // flurry can't surface before we've watched the channel briefly. Rebuilt into a fresh view object
+  // each tick so subscribers see the update.
+  function updateChannelRates(now) {
     const view = {}
-    for (const [key, st] of channelStats) {
-      const delta = st.total - st.lastTotal
-      st.lastTotal = st.total
-      const next = tickRate(st, delta)
-      st.rate = next.rate
-      st.ticks = next.ticks
-      view[key] = { total: st.total, rate: st.rate, ready: isRateReady(st) }
+    for (const [key, cs] of channelStats) {
+      const rate = tickRate(cs.meter, now)
+      view[key] = { total: cs.total, rate, ready: isRateReady(cs.meter, now) }
     }
     channelStatsView = view
   }
@@ -197,7 +196,7 @@ function createStore() {
     const now = Date.now()
     engine.tick(now)
     snapshot = engine.snapshot(now)
-    updateChannelRates()
+    updateChannelRates(now)
     notify()
   }, TICK_MS)
 
