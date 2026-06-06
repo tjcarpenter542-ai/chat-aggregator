@@ -55,7 +55,10 @@ export function ChannelInput() {
         type="text"
         placeholder={source === 'kick' ? 'kick channel slug' : `${sourceLabel(source)} channel`}
         value={channel}
-        onChange={(e) => setChannel(e.target.value)}
+        onChange={(e) => {
+          setChannel(e.target.value)
+          if (error) setError('') // the validation hint clears the moment the user starts typing
+        }}
       />
       {source === 'kick' && (
         <input
