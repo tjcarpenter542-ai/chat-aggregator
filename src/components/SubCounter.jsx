@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSubCount, useSubEvents } from '../hooks/useStore.js'
+import { useAvoidVideoOverlap } from '../hooks/useAvoidVideoOverlap.js'
 import { sourceColor, sourceLabel } from '../config.js'
 
 // Compact per-sub detail line from the normalized sub metadata. Falls back gracefully when a
@@ -32,6 +33,9 @@ export function SubCounter() {
   const [flash, setFlash] = useState(false)
   const [open, setOpen] = useState(false)
   const wrapRef = useRef(null)
+  const panelRef = useRef(null)
+  // Never let this panel's box overlap the video iframe (Twitch rebuffers if anything paints over it).
+  useAvoidVideoOverlap(panelRef, open)
 
   useEffect(() => {
     if (subs > prev.current) {
@@ -72,7 +76,7 @@ export function SubCounter() {
         🎉 {subs} sub{subs === 1 ? '' : 's'}
       </button>
       {open && (
-        <div className="sub-panel" role="dialog" aria-label="Subscribers this session">
+        <div className="sub-panel" role="dialog" aria-label="Subscribers this session" ref={panelRef}>
           <div className="sub-panel-head">
             <span>Subs this session</span>
             <span className="sub-panel-count">{subs}</span>

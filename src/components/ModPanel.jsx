@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useModEvents, useModCounts } from '../hooks/useStore.js'
+import { useAvoidVideoOverlap } from '../hooks/useAvoidVideoOverlap.js'
 import { sourceColor, sourceLabel } from '../config.js'
 
 // Normalize a duration in seconds to a compact label (10s / 10m / 1h / 1d).
@@ -43,6 +44,9 @@ export function ModPanel() {
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState(null) // "source:channel" to focus the action list, or null = all
   const wrapRef = useRef(null)
+  const panelRef = useRef(null)
+  // Never let this panel's box overlap the video iframe (Twitch rebuffers if anything paints over it).
+  useAvoidVideoOverlap(panelRef, open)
 
   useEffect(() => {
     if (!open) return
@@ -77,7 +81,7 @@ export function ModPanel() {
         🛡 {total} mod{total === 1 ? '' : 's'}
       </button>
       {open && (
-        <div className="mod-panel" role="dialog" aria-label="Moderation activity this session">
+        <div className="mod-panel" role="dialog" aria-label="Moderation activity this session" ref={panelRef}>
           <div className="mod-panel-head">
             <span>Moderation activity</span>
             <span className="mod-panel-count">{total}</span>
