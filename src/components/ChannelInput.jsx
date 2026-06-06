@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SOURCES, sourceLabel } from '../config.js'
 import { store } from '../lib/chatStore.js'
+
+const ERROR_TIMEOUT_MS = 2000 // the validation hint auto-dismisses on its own after ~2s
 
 // Add a feed live: pick a source, type a channel. For Kick, an optional chatroom-ID field
 // is the fallback when Cloudflare blocks the auto-lookup.
@@ -9,29 +11,40 @@ export function ChannelInput() {
   const [channel, setChannel] = useState('')
   const [chatroomId, setChatroomId] = useState('')
   const [error, setError] = useState('')
+  const errorTimer = useRef(null)
 
-  // The error only flags the LAST empty/invalid submit, so any edit to the form dismisses it —
-  // typing in EITHER field or switching source. (The earlier fix only cleared it from the channel
-  // input, so e.g. an empty-Kick submit left "Enter a channel name" stuck while you typed the
-  // chatroom ID.) setError('') is a no-op re-render when already clear, so it's safe everywhere.
-  const clearError = () => setError('')
+  // The error only flags the LAST empty/invalid submit. It auto-dismisses on its own after
+  // ERROR_TIMEOUT_MS (no interaction needed) and ALSO clears immediately on any form edit — typing
+  // in either field or switching source — or a successful add. showError (re)starts the timer on
+  // every submit, so a re-submit re-shows the hint for the full window even if the text is identical.
+  const showError = (msg) => {
+    setError(msg)
+    clearTimeout(errorTimer.current)
+    errorTimer.current = setTimeout(() => setError(''), ERROR_TIMEOUT_MS)
+  }
+  const clearError = () => {
+    clearTimeout(errorTimer.current)
+    setError('')
+  }
+  // Cancel a pending auto-dismiss if the component unmounts, so it can't fire on a dead component.
+  useEffect(() => () => clearTimeout(errorTimer.current), [])
 
   const submit = (e) => {
     e.preventDefault()
-    setError('')
+    clearError()
     const ch = channel.trim().replace(/^#/, '')
     if (!ch) {
-      setError('Enter a channel name')
+      showError('Enter a channel name')
       return
     }
     const cid = chatroomId.trim()
     if (source === 'kick') {
       if (!cid) {
-        setError('Chatroom ID is required for Kick')
+        showError('Chatroom ID is required for Kick')
         return
       }
       if (!/^\d+$/.test(cid)) {
-        setError('Chatroom ID must be numeric')
+        showError('Chatroom ID must be numeric')
         return
       }
     }
@@ -41,7 +54,7 @@ export function ChannelInput() {
       chatroomId: source === 'kick' ? cid : undefined,
     })
     if (!res.ok) {
-      setError(res.error)
+      showError(res.error)
       return
     }
     setChannel('')
