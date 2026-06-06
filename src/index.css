@@ -182,6 +182,8 @@ body {
   width: 100%;
   height: clamp(190px, 32vh, 360px);
   background: #000;
+  /* Own stacking context so a panel that opens over the video composites ON TOP cleanly. */
+  isolation: isolate;
 }
 .video-iframe {
   position: absolute;
@@ -190,6 +192,14 @@ body {
   height: 100%;
   border: 0;
   display: block;
+  /* Pin the cross-origin player on its OWN GPU compositing layer. The mod panel and sub roster
+     grow tall enough on a busy chat to overlap the video; without this, layering an opaque element
+     over the iframe can force the browser to re-layer/repaint it, which rebuffers the stream. A
+     persistent (never-toggled) compositing layer lets overlays draw on top without disturbing it.
+     translateZ(0) has no 2D effect, so the iframe's bounding box is unchanged. */
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 .video-empty {
   padding: 22px 16px;
