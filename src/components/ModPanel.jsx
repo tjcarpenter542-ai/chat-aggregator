@@ -40,6 +40,7 @@ export function ModPanel() {
   const counts = useModCounts()
   const total = events.length
   const [open, setOpen] = useState(false)
+  const [filter, setFilter] = useState(null) // "source:channel" to focus the action list, or null = all
   const wrapRef = useRef(null)
 
   useEffect(() => {
@@ -59,6 +60,9 @@ export function ModPanel() {
   }, [open])
 
   const channelRows = Object.entries(counts).sort((a, b) => b[1] - a[1])
+  // Ignore a stale filter (e.g. after clear()) so it falls back to showing all.
+  const active = filter != null && counts[filter] != null ? filter : null
+  const shown = active ? events.filter((e) => `${e.source}:${e.channel}` === active) : events
 
   return (
     <div className="mod-counter-wrap" ref={wrapRef}>
@@ -78,12 +82,28 @@ export function ModPanel() {
             <span className="mod-panel-count">{total}</span>
           </div>
           {channelRows.length > 0 && (
-            <div className="mod-bychannel">
+            <div className="mod-bychannel" data-filtered={active != null}>
+              <button
+                className={`mod-all${active == null ? ' is-active' : ''}`}
+                onClick={() => setFilter(null)}
+                aria-pressed={active == null}
+                title="Show actions from all channels"
+              >
+                All
+              </button>
               {channelRows.map(([key, n]) => {
                 const [source, ...rest] = key.split(':')
                 const channel = rest.join(':')
+                const isActive = active === key
                 return (
-                  <span className="mod-chan-row" key={key}>
+                  <button
+                    type="button"
+                    className={`mod-chan-row${isActive ? ' is-active' : ''}`}
+                    key={key}
+                    onClick={() => setFilter(isActive ? null : key)}
+                    aria-pressed={isActive}
+                    title={`Show only ${sourceLabel(source)} · ${channel}`}
+                  >
                     <span className="mod-badge" style={{ backgroundColor: sourceColor(source) }}>
                       {sourceLabel(source)}
                     </span>
@@ -91,7 +111,7 @@ export function ModPanel() {
                       {channel}
                     </span>
                     <span className="mod-chan-n">{n}</span>
-                  </span>
+                  </button>
                 )
               })}
             </div>
@@ -100,7 +120,7 @@ export function ModPanel() {
             <div className="mod-panel-empty">No moderation actions yet this session.</div>
           ) : (
             <ul className="mod-panel-list">
-              {events
+              {shown
                 .slice()
                 .reverse()
                 .slice(0, 100)
