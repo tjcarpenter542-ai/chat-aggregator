@@ -34,6 +34,9 @@ export function FeedList({ activeFilter, onFilter }) {
       {feeds.map((f) => {
         const active = activeFilter === f.key
         const st = stats[f.key]
+        // During the brief warm-up after a channel's first message we have no trustworthy sustained
+        // rate yet (the connect flurry would otherwise read as a false spike) — show "measuring…".
+        const measuring = !!st && !st.ready
         const rate = st ? Math.round(st.rate) : 0
         const total = st ? st.total : 0
         return (
@@ -59,9 +62,13 @@ export function FeedList({ activeFilter, onFilter }) {
               <span className="feed-chan">{f.channel}</span>
               <span
                 className="feed-rate"
-                title={`messages per minute · ${total.toLocaleString()} this session`}
+                title={
+                  measuring
+                    ? 'measuring messages per minute…'
+                    : `messages per minute · ${total.toLocaleString()} this session`
+                }
               >
-                {rate} msg/min
+                {measuring ? 'measuring…' : `${rate} msg/min`}
               </span>
             </button>
             {f.status === 'lookup-failed' && (

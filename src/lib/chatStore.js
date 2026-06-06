@@ -1,6 +1,7 @@
 import { CONNECTORS } from '../connectors/index.js'
 import { createEngine } from './keywordEngine.js'
 import { MAX_MESSAGES, MAX_ROSTER, FLUSH_MS, TICK_MS } from './constants.js'
+import { newRateState, tickRate, isRateReady } from './rateMeter.js'
 
 // Module-level store (a singleton). Holds the capped, timestamp-sorted message list, per-feed
 // statuses, and the latest engine snapshot. Connectors push messages in via `ingest`; we
@@ -21,8 +22,8 @@ function createStore() {
   let modCountsView = modCounts
   // Live per-channel message activity, built ONLY from real messages flowing through the store
   // (no external/viewer APIs): a monotonic total + a smoothed messages-per-minute rate.
-  const channelStats = new Map() // "source:channel" -> { total, lastTotal, rate }
-  let channelStatsView = {} // plain { key: { total, rate } } for useSyncExternalStore
+  const channelStats = new Map() // "source:channel" -> { total, lastTotal, rate, ticks }
+  let channelStatsView = {} // plain { key: { total, rate, ready } } for useSyncExternalStore
 
   const feeds = new Map() // key "source:channel" -> { source, channel, status, detail, connector }
   let feedsView = [] // immutable projection of `feeds` for getFeeds()
@@ -91,7 +92,7 @@ function createStore() {
     const ckey = `${msg.source}:${msg.channel}`
     let cs = channelStats.get(ckey)
     if (!cs) {
-      cs = { total: 0, lastTotal: 0, rate: 0 }
+      cs = { total: 0, lastTotal: 0, ...newRateState() }
       channelStats.set(ckey, cs)
     }
     cs.total += 1
@@ -169,18 +170,20 @@ function createStore() {
     notify()
   }
 
-  // Smoothed per-channel messages-per-minute from the monotonic per-channel totals. EMA over the
-  // per-tick delta so the number is responsive but not jittery, and decays toward 0 when a chat
-  // goes quiet. Rebuilt into a fresh view object each tick so subscribers see the live update.
-  const RATE_ALPHA = 0.5
+  // Smoothed per-channel messages-per-minute from the monotonic per-channel totals. The rate meter
+  // (see rateMeter.js) EMA-smooths each full tick's delta so the number is responsive but not
+  // jittery, and decays toward 0 when a chat goes quiet — while skipping the first partial/burst
+  // tick and reporting `ready=false` during a short warm-up so the connect flurry can't masquerade
+  // as a sustained rate. Rebuilt into a fresh view object each tick so subscribers see the update.
   function updateChannelRates() {
     const view = {}
     for (const [key, st] of channelStats) {
       const delta = st.total - st.lastTotal
       st.lastTotal = st.total
-      const inst = delta * (60_000 / TICK_MS) // delta-per-tick -> per-minute
-      st.rate = RATE_ALPHA * inst + (1 - RATE_ALPHA) * st.rate
-      view[key] = { total: st.total, rate: st.rate }
+      const next = tickRate(st, delta)
+      st.rate = next.rate
+      st.ticks = next.ticks
+      view[key] = { total: st.total, rate: st.rate, ready: isRateReady(st) }
     }
     channelStatsView = view
   }
