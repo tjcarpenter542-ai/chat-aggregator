@@ -1284,12 +1284,20 @@ body {
   flex-direction: column;
   gap: 2px;
 }
+/* Each action row is a button: single-line + truncated by default, click to reveal the full text. */
 .mod-item {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 6px 5px;
+  border: none;
+  background: transparent;
   border-radius: var(--radius-sm);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 .mod-item:hover {
   background: rgba(255, 255, 255, 0.03);
@@ -1305,6 +1313,17 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.82rem;
+}
+/* Clicked row: drop the truncation and let the full action text wrap to as many lines as needed.
+   The badge + channel stay pinned to the top-right as the row grows. */
+.mod-item.is-expanded {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+}
+.mod-item.is-expanded .mod-item-desc {
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
 }
 /* Shared platform badge + channel name for both the per-channel rows and the action list. */
 .mod-badge {

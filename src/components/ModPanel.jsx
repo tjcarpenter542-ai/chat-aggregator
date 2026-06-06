@@ -43,6 +43,7 @@ export function ModPanel() {
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0)
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState(null) // "source:channel" to focus the action list, or null = all
+  const [expandedId, setExpandedId] = useState(null) // the one row showing its full untruncated text
   const wrapRef = useRef(null)
   const panelRef = useRef(null)
   // Never let this panel's box overlap the video iframe (Twitch rebuffers if anything paints over it).
@@ -51,10 +52,16 @@ export function ModPanel() {
   useEffect(() => {
     if (!open) return
     const onPointer = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setOpen(false)
+        setExpandedId(null)
+      }
     }
     const onKey = (e) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') {
+        setOpen(false)
+        setExpandedId(null)
+      }
     }
     document.addEventListener('mousedown', onPointer)
     document.addEventListener('keydown', onKey)
@@ -74,7 +81,10 @@ export function ModPanel() {
       <button
         className="mod-counter"
         title="moderation actions this session — click for activity"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (open) setExpandedId(null) // collapse any expanded row when closing, so it reopens tidy
+          setOpen((o) => !o)
+        }}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
@@ -129,18 +139,32 @@ export function ModPanel() {
                 .slice()
                 .reverse()
                 .slice(0, 100)
-                .map((e) => (
-                  <li key={e.id} className="mod-item">
-                    <span className="mod-item-icon">{ICON[e.mod?.action] || '•'}</span>
-                    <span className="mod-item-desc">{modDescription(e.mod)}</span>
-                    <span className="mod-badge" style={{ backgroundColor: sourceColor(e.source) }}>
-                      {sourceLabel(e.source)}
-                    </span>
-                    <span className="mod-chan" style={{ color: sourceColor(e.source) }}>
-                      {e.channel}
-                    </span>
-                  </li>
-                ))}
+                .map((e) => {
+                  const desc = modDescription(e.mod)
+                  const expanded = expandedId === e.id
+                  return (
+                    <li key={e.id}>
+                      {/* Single-line + truncated by default; click reveals the full text (Twitch IRC
+                          gives no reason/mod name, so "full" is just the untruncated username+action). */}
+                      <button
+                        type="button"
+                        className={`mod-item${expanded ? ' is-expanded' : ''}`}
+                        onClick={() => setExpandedId(expanded ? null : e.id)}
+                        aria-expanded={expanded}
+                        title={desc}
+                      >
+                        <span className="mod-item-icon">{ICON[e.mod?.action] || '•'}</span>
+                        <span className="mod-item-desc">{desc}</span>
+                        <span className="mod-badge" style={{ backgroundColor: sourceColor(e.source) }}>
+                          {sourceLabel(e.source)}
+                        </span>
+                        <span className="mod-chan" style={{ color: sourceColor(e.source) }}>
+                          {e.channel}
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
             </ul>
           )}
         </div>
