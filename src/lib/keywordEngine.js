@@ -9,6 +9,7 @@ import {
   SPIKE_BANNER_MS,
   TOP_N,
   MIN_TOKEN_LEN,
+  MAX_RECORDS,
 } from './constants.js'
 
 const TOKEN_RE = /[a-z0-9']+/g
@@ -82,14 +83,15 @@ export function createEngine() {
     records.push({ ts: msg.timestamp, source: msg.source, tokens })
   }
 
-  // Drop records older than the baseline window. Call on each tick to bound memory.
+  // Drop records older than the baseline window, AND hard-cap the count so a high-rate raid can't
+  // grow the retained set (and the per-tick snapshot scan) without bound. Call on each tick.
   function tick(now) {
     const cutoff = now - BASELINE_MS
-    if (records.length && records[0].ts < cutoff) {
-      let i = 0
-      while (i < records.length && records[i].ts < cutoff) i++
-      records = records.slice(i)
-    }
+    let start = 0
+    while (start < records.length && records[start].ts < cutoff) start++
+    // Count cap (safety net): keep only the most recent MAX_RECORDS.
+    if (records.length - start > MAX_RECORDS) start = records.length - MAX_RECORDS
+    if (start > 0) records = records.slice(start)
   }
 
   // Wipe all retained messages — used by the "Clear" control for a true clean slate.
@@ -161,8 +163,14 @@ export function createEngine() {
 
     // --- View 2: cross-platform spikes (same data) ---
     const curSecs = WINDOW_MS / 1000
-    const baseSecs = Math.max(1, (BASELINE_MS - WINDOW_MS) / 1000)
-    const epsilonRate = 1 / baseSecs
+    // epsilon floor = one occurrence over the FULL baseline, so a current burst with no history
+    // still spikes (this floor must NOT shrink, or no-history bursts would stop firing).
+    const epsilonRate = 1 / Math.max(1, (BASELINE_MS - WINDOW_MS) / 1000)
+    // Divide baseline counts by the ACTUAL span of baseline data present — when MAX_RECORDS has
+    // truncated the oldest records, the span is shorter than the full window, so using it keeps the
+    // baseline RATE accurate (no spurious extra spikes) without touching the no-history floor above.
+    const oldestTs = records.length ? records[0].ts : now
+    const baseSecs = Math.max(1, (curStart - Math.max(baseStart, oldestTs)) / 1000)
     const spikes = []
     for (const [word, count] of curCounts) {
       if (count < MIN_SPIKE_COUNT) continue

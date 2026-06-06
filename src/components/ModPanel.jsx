@@ -38,7 +38,8 @@ function modDescription(mod) {
 export function ModPanel() {
   const events = useModEvents()
   const counts = useModCounts()
-  const total = events.length
+  // Exact session total from the uncapped per-channel counts (events[] is a capped recent roster).
+  const total = Object.values(counts).reduce((sum, n) => sum + n, 0)
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState(null) // "source:channel" to focus the action list, or null = all
   const wrapRef = useRef(null)

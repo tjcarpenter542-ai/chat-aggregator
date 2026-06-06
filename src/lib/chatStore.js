@@ -1,6 +1,6 @@
 import { CONNECTORS } from '../connectors/index.js'
 import { createEngine } from './keywordEngine.js'
-import { MAX_MESSAGES, FLUSH_MS, TICK_MS } from './constants.js'
+import { MAX_MESSAGES, MAX_ROSTER, FLUSH_MS, TICK_MS } from './constants.js'
 
 // Module-level store (a singleton). Holds the capped, timestamp-sorted message list, per-feed
 // statuses, and the latest engine snapshot. Connectors push messages in via `ingest`; we
@@ -10,7 +10,7 @@ function createStore() {
   let messages = [] // sorted by timestamp asc, capped to MAX_MESSAGES
   let pending = [] // incoming buffer, flushed every FLUSH_MS
   let snapshot = { keywords: [], sentiment: 0, spikes: [], bannerSpike: null, total: 0 }
-  let subCount = 0 // session sub-event counter (NOT reset by clear())
+  let subCount = 0 // session sub-event counter (the exact running total; reset by clear())
   let subEvents = [] // session roster of normalized sub events; the SubCounter panel reads this
   let subEventsView = subEvents // stable reference between sub events (for useSyncExternalStore)
   let messageSeq = 0 // monotonic count of every message ingested — powers the paused "N new"
@@ -75,8 +75,10 @@ function createStore() {
 
   function ingest(msg) {
     if (msg.type === 'mod') {
-      // Mod actions feed ONLY the moderation view — not the chat feed or the keyword engine.
+      // Mod actions feed ONLY the moderation view — not the chat feed or the keyword engine. The
+      // roster is capped (the exact per-channel totals live in modCounts, which stays uncapped).
       modEvents = modEvents.concat(msg)
+      if (modEvents.length > MAX_ROSTER) modEvents = modEvents.slice(-MAX_ROSTER)
       modEventsView = modEvents
       const key = `${msg.source}:${msg.channel}`
       modCounts = { ...modCounts, [key]: (modCounts[key] || 0) + 1 }
@@ -94,9 +96,10 @@ function createStore() {
     }
     cs.total += 1
     if (msg.type === 'sub') {
-      subCount += 1 // surfaced via getSubCount; propagated on the next flush notify
-      // New array ref so getSubEvents reports a change; subs are rare, so the O(n) copy is fine.
+      subCount += 1 // exact running total (surfaced via getSubCount), independent of the capped roster
+      // New array ref so getSubEvents reports a change; cap the roster tail so it can't grow forever.
       subEvents = subEvents.concat(msg)
+      if (subEvents.length > MAX_ROSTER) subEvents = subEvents.slice(-MAX_ROSTER)
       subEventsView = subEvents
     } else {
       engine.addMessage(msg) // only chat feeds the keyword/sentiment engine

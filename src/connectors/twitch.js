@@ -3,8 +3,24 @@ import { createReconnectingSocket } from '../lib/reconnectingSocket.js'
 
 const TWITCH_WS = 'wss://irc-ws.chat.twitch.tv:443'
 
-// USERNOTICE msg-id values that represent a (re)subscription or gift sub.
-const SUB_MSG_IDS = new Set(['sub', 'resub', 'subgift', 'submysterygift'])
+// USERNOTICE msg-id values that count as one real (re)subscription or gift sub. 'submysterygift'
+// (the community-gift batch announcement) is intentionally EXCLUDED: Twitch ALSO emits one 'subgift'
+// per recipient, so counting both double-counts a gift bomb (a 5-sub gift would count as 6). We
+// count only the per-recipient 'subgift' events — each is exactly one new subscriber.
+const SUB_MSG_IDS = new Set(['sub', 'resub', 'subgift'])
+
+// NOTICE msg-id values that mean the channel genuinely won't deliver chat (suspended/banned/missing).
+// ONLY these mark the feed errored. Twitch also sends benign advisory NOTICEs (emote-only/slow/subs-
+// mode toggles, hosting info, etc.) on a perfectly healthy channel — those must NOT flip a feed that
+// is still receiving messages to red / drop the global LIVE badge to OFFLINE.
+const FATAL_NOTICE_IDS = new Set([
+  'msg_channel_suspended',
+  'msg_channel_blocked',
+  'msg_banned',
+  'msg_room_not_found',
+  'tos_ban',
+  'msg_suspended',
+])
 
 // Unescape IRCv3 tag values in a SINGLE left-to-right pass: \s -> space, \: -> ;, \\ -> \,
 // \r, \n. A single pass avoids the mis-decode that sequential replaces produce (e.g. an
@@ -131,11 +147,15 @@ export function createTwitchConnector({ channel, onMessage, onStatus }) {
           }
           continue
         }
-        // NOTICE surfaces join/channel problems (suspended/invalid channel, etc.) — show it
-        // instead of leaving the feed looking healthy while silently receiving nothing.
+        // NOTICE: surface only FATAL channel problems so the feed doesn't look healthy while
+        // silently receiving nothing — but a benign advisory notice must not error it (see above).
         if (command === 'NOTICE') {
-          const i = params.indexOf(' :')
-          onStatus?.('error', i === -1 ? params : params.slice(i + 2))
+          // Only surface FATAL channel problems as an error; ignore benign advisory notices so a
+          // routine notice can't flip a live, message-flowing feed to OFFLINE.
+          if (FATAL_NOTICE_IDS.has(tags['msg-id'])) {
+            const i = params.indexOf(' :')
+            onStatus?.('error', i === -1 ? params : params.slice(i + 2))
+          }
           continue
         }
         // USERNOTICE carries sub/resub/gift events. system-msg is the human-readable summary.
@@ -144,11 +164,18 @@ export function createTwitchConnector({ channel, onMessage, onStatus }) {
           if (SUB_MSG_IDS.has(msgId)) {
             const i = params.indexOf(' :')
             const userComment = i === -1 ? '' : params.slice(i + 2)
+            const isGift = msgId === 'subgift'
+            // display-name is the GIFTER on a subgift, otherwise the subscriber themselves.
+            const actor = tags['display-name'] || tags['login'] || 'someone'
+            const recipient =
+              tags['msg-param-recipient-display-name'] || tags['msg-param-recipient-user-name'] || undefined
             onMessage(
               normalize({
                 source: 'twitch',
                 channel,
-                username: tags['display-name'] || tags['login'] || 'someone',
+                // For a gift the SUBSCRIBER is the recipient — show them, not the gifter repeated once
+                // per recipient (which is what made a gift bomb list the same gifter N times).
+                username: isGift ? recipient || actor : actor,
                 message: tags['system-msg'] || userComment || 'subscribed',
                 timestamp: tags['tmi-sent-ts'] ? Number(tags['tmi-sent-ts']) : Date.now(),
                 id: tags['id'],
@@ -157,8 +184,8 @@ export function createTwitchConnector({ channel, onMessage, onStatus }) {
                   msgId,
                   months: tags['msg-param-cumulative-months'] || tags['msg-param-months'] || undefined,
                   tier: tags['msg-param-sub-plan'] || undefined,
-                  giftCount: tags['msg-param-mass-gift-count'] || undefined,
-                  recipient: tags['msg-param-recipient-display-name'] || undefined,
+                  recipient,
+                  gifter: isGift ? actor : undefined,
                 },
               }),
             )

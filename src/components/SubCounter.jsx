@@ -7,8 +7,13 @@ import { sourceColor, sourceLabel } from '../config.js'
 function subDetail(sub) {
   if (!sub) return 'subscribed'
   if (sub.giftCount) {
+    // Kick mass gift (one event carrying the batch count).
     const n = Number(sub.giftCount) || sub.giftCount
     return `🎁 gifted ${n} sub${Number(n) > 1 ? 's' : ''}`
+  }
+  if (sub.gifter || sub.msgId === 'subgift') {
+    // Twitch gift sub: this row IS the recipient (the new subscriber); credit the gifter here.
+    return sub.gifter ? `🎁 gift from ${sub.gifter}` : '🎁 gift sub'
   }
   if (sub.months) {
     const m = Number(sub.months) || sub.months
@@ -77,7 +82,7 @@ export function SubCounter() {
           ) : (
             <ul className="sub-panel-list">
               {events
-                .slice()
+                .slice(-100)
                 .reverse()
                 .map((e) => (
                   <li key={e.id} className="sub-panel-item">

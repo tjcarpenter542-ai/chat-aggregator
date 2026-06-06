@@ -10,9 +10,12 @@ export const SPIKE_BANNER_MS = 9000 // hold a fired spike in the snapshot this l
 export const TOP_N = 18 // number of trending words/emojis/numbers shown in the trending rail
 export const TICK_MS = 1000 // engine tick + snapshot cadence (1s)
 export const MIN_TOKEN_LEN = 3 // ignore tokens shorter than this for trending/spikes
+export const MAX_RECORDS = 50_000 // hard cap on retained engine records — bounds memory + per-tick
+// snapshot cost under sustained high volume / raids (records are otherwise only time-pruned).
 
 // --- Feed ---
 export const MAX_MESSAGES = 1000 // hard cap on retained messages (memory bound)
+export const MAX_ROSTER = 500 // cap on the sub/mod session rosters (bounds memory; counters stay exact)
 export const FLUSH_MS = 250 // batch incoming messages into React state this often
 
 // --- Reconnection (used by reconnectingSocket) ---
