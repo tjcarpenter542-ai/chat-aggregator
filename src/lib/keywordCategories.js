@@ -7,6 +7,7 @@ export const CATEGORY_TERMS = {
     'bagholder', 'ath', 'moon', 'lambo', 'alpha', 'pump', 'dump', 'rug', 'rugpull', 'safu',
     'btfd', 'tendies', 'hodler', 'altseason', 'memecoin', 'solana', 'sol', 'btc', 'eth', 'zec',
     'hype', 'bitcoin', 'ethereum', 'xrp', 'doge', 'bonk', 'wif', 'pepe', 'popcat',
+    'market', 'markets',
   ]),
   ai: new Set([
     'slop', 'hallucination', 'agentic', 'agent', 'agents', 'jailbreak', 'llm', 'grok', 'rag',
