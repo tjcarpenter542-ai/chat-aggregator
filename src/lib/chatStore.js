@@ -108,12 +108,28 @@ function createStore() {
     }
   }
 
-  // Reset the feed + engine to a true clean slate. Active feeds stay connected, but EVERYTHING
-  // session-scoped is wiped — including the sub counter and roster (so Clear means a full reset).
+  // Full reset back to the fresh-load empty state. Clear DISCONNECTS every feed (closing its
+  // WebSocket so nothing keeps streaming or reconnecting in the background) and empties the feed
+  // list, then wipes EVERYTHING session-scoped — messages, engine, sentiment/spikes, the sub and
+  // mod counters + rosters, and the per-channel rates. After this the store looks exactly like a
+  // just-opened app; the user re-adds channels to start again. (The companion video panel and any
+  // active channel filter are App-level UI state, reset by the Clear handler in App.jsx.)
   function clear() {
+    // Tear down all live connections first so no orphaned socket survives the wipe.
+    for (const entry of feeds.values()) {
+      try {
+        entry.connector?.close()
+      } catch {
+        /* ignore */
+      }
+    }
+    feeds.clear()
+    rebuildFeedsView()
+
     messages = []
     messagesView = messages
     pending = []
+    messageSeq = 0 // back to a fresh count (the paused "N new" delta resets with it)
     engine.reset()
     snapshot = { keywords: [], sentiment: 0, spikes: [], bannerSpike: null, total: 0 }
     subCount = 0

@@ -55,7 +55,18 @@ export default function App() {
             >
               📺 {showStream ? 'Hide stream' : 'Watch stream'}
             </button>
-            <button className="clear-btn" onClick={() => store.clear()} title="Clear the feed and reset the keyword engine (feeds stay connected)">
+            <button
+              className="clear-btn"
+              onClick={() => {
+                // Full reset to the fresh-load state: the store disconnects every feed and wipes all
+                // session data; here we also stop the stream and drop any active channel filter so
+                // nothing App-level lingers.
+                store.clear()
+                setShowStream(false)
+                setFilter(null)
+              }}
+              title="Reset everything to a fresh start — disconnect all feeds, stop the stream, and clear the feed, trending, subs, and mods"
+            >
               Clear
             </button>
           </div>
