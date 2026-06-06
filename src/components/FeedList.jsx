@@ -57,8 +57,11 @@ export function FeedList({ activeFilter, onFilter }) {
                 {sourceLabel(f.source)}
               </span>
               <span className="feed-chan">{f.channel}</span>
-              <span className="feed-rate" title={`${total.toLocaleString()} messages this session`}>
-                {rate}/min
+              <span
+                className="feed-rate"
+                title={`messages per minute · ${total.toLocaleString()} this session`}
+              >
+                {rate} msg/min
               </span>
             </button>
             {f.status === 'lookup-failed' && (
