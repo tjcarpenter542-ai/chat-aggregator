@@ -1,0 +1,352 @@
+/* Market Bubble intro/splash overlay. Ported from the Claude Design handoff, kept visually intact.
+   Everything is scoped under .mb-intro and keyframes are mb-* prefixed so it can't touch the app. */
+.mb-intro {
+  --mb-cream: #ede8dc;
+  --mb-cream-deep: #e5dfcf;
+  --mb-charcoal: #2b2b2b;
+  --mb-green: #1fa85c;
+  --mb-gold: #e0a52e;
+  --mb-line: color-mix(in oklab, #2b2b2b 26%, transparent);
+  --mb-line-soft: color-mix(in oklab, #2b2b2b 14%, transparent);
+  --mb-pad: clamp(22px, 3.4vw, 52px);
+
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  padding: clamp(14px, 2.2vw, 30px);
+  background: var(--mb-cream);
+  background-image:
+    radial-gradient(140% 120% at 50% 0%, color-mix(in oklab, #fff 10%, transparent) 0%, transparent 46%),
+    radial-gradient(120% 120% at 50% 120%, var(--mb-cream-deep) 0%, transparent 50%);
+  transform-origin: center;
+  transition: opacity 0.9s ease, transform 0.9s cubic-bezier(0.6, 0.02, 0.3, 1), filter 0.9s ease;
+  font-family: 'Archivo', system-ui, sans-serif;
+  color: var(--mb-charcoal);
+  -webkit-font-smoothing: antialiased;
+}
+.mb-intro.entering {
+  opacity: 0;
+  transform: scale(1.14);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+/* paper grain */
+.mb-intro::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- frame ---------- */
+.mb-frame {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  border: 1.5px solid var(--mb-line);
+  border-radius: 18px;
+  padding: var(--mb-pad);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  opacity: 0;
+  animation: mb-frameIn 1.1s ease forwards;
+  animation-delay: 0.55s;
+}
+.mb-frame::before {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border: 1px solid var(--mb-line-soft);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* corner ticks */
+.mb-tick {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  opacity: 0.55;
+}
+.mb-tick::before,
+.mb-tick::after {
+  content: '';
+  position: absolute;
+  background: var(--mb-charcoal);
+}
+.mb-tick::before {
+  width: 100%;
+  height: 1.4px;
+  top: 0;
+}
+.mb-tick::after {
+  width: 1.4px;
+  height: 100%;
+  left: 0;
+}
+.mb-tick.tl {
+  top: 16px;
+  left: 16px;
+}
+.mb-tick.tr {
+  top: 16px;
+  right: 16px;
+  transform: scaleX(-1);
+}
+.mb-tick.bl {
+  bottom: 16px;
+  left: 16px;
+  transform: scaleY(-1);
+}
+.mb-tick.br {
+  bottom: 16px;
+  right: 16px;
+  transform: scale(-1, -1);
+}
+
+/* ---------- top row ---------- */
+.mb-row-top {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.mb-tagline {
+  justify-self: start;
+}
+.mb-tagline span {
+  display: block;
+  font-size: clamp(12px, 1.05vw, 15px);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  line-height: 1.9;
+  color: var(--mb-charcoal);
+}
+.mb-tagline span:nth-child(2) {
+  color: var(--mb-green);
+}
+.mb-tagline span:nth-child(3) {
+  color: var(--mb-gold);
+}
+
+/* ---------- center / logo ---------- */
+.mb-center {
+  display: grid;
+  place-items: center;
+}
+.mb-stage {
+  display: grid;
+  justify-items: center;
+  gap: clamp(20px, 2.6vw, 34px);
+}
+.mb-logo {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+  padding: 0;
+  position: relative;
+  border-radius: 14px;
+  font-family: inherit;
+}
+.mb-logo-inner {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  transform: scale(1);
+  animation: mb-logoSettle 1.25s cubic-bezier(0.16, 0.84, 0.27, 1) both;
+}
+.mb-logo.ready .mb-logo-inner {
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.5s ease;
+}
+.mb-logo.ready:hover .mb-logo-inner {
+  transform: scale(1.045);
+  filter: drop-shadow(0 14px 30px color-mix(in oklab, var(--mb-charcoal) 22%, transparent));
+}
+.mb-logo.ready:active .mb-logo-inner {
+  transform: scale(1.01);
+}
+.mb-logo:focus-visible {
+  outline: 2px solid var(--mb-green);
+  outline-offset: 8px;
+}
+.mb-logo-img {
+  display: block;
+  width: clamp(270px, 35vw, 470px);
+  height: auto;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.mb-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7em;
+  font-size: clamp(12px, 1.05vw, 15px);
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--mb-charcoal);
+}
+.mb-pin {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mb-gold);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--mb-gold) 70%, transparent);
+  animation: mb-pulse 2.4s ease-out infinite;
+}
+
+/* ---------- bottom row ---------- */
+.mb-row-bottom {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+}
+.mb-quote {
+  justify-self: start;
+  align-self: end;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(18px, 1.7vw, 26px);
+  color: var(--mb-charcoal);
+}
+.mb-quote .mb-mk {
+  color: var(--mb-gold);
+  font-style: normal;
+}
+.mb-schedule {
+  justify-self: center;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7em;
+  font-size: clamp(12px, 1.05vw, 15px);
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--mb-charcoal);
+  padding: 11px 22px;
+  border: 1px solid var(--mb-line);
+  border-radius: 999px;
+  background: color-mix(in oklab, #fff 16%, transparent);
+}
+.mb-schedule .mb-live {
+  color: var(--mb-green);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.mb-schedule .mb-blink {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mb-green);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--mb-green) 60%, transparent);
+  animation: mb-pulse 1.8s ease-out infinite;
+}
+.mb-schedule .mb-sep {
+  opacity: 0.4;
+  font-weight: 400;
+}
+.mb-presented {
+  justify-self: end;
+  text-align: right;
+  align-self: end;
+  font-size: clamp(11px, 1vw, 14px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mb-charcoal);
+}
+.mb-presented b {
+  font-weight: 600;
+  color: var(--mb-charcoal);
+  letter-spacing: 0.04em;
+  font-family: 'Playfair Display', serif;
+  text-transform: none;
+  font-size: 1.18em;
+}
+
+/* staggered fade for everything except the logo */
+.mb-intro .fade {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: mb-fadeUp 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+.mb-intro .d1 { animation-delay: 0.95s; }
+.mb-intro .d2 { animation-delay: 1.08s; }
+.mb-intro .d3 { animation-delay: 1.2s; }
+.mb-intro .d4 { animation-delay: 1.32s; }
+.mb-intro .d5 { animation-delay: 1.44s; }
+.mb-intro .d6 { animation-delay: 1.56s; }
+
+@keyframes mb-logoSettle {
+  0% { transform: scale(1.85); opacity: 0; filter: blur(2px); }
+  55% { opacity: 1; filter: blur(0); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+@keyframes mb-frameIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes mb-fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes mb-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--mb-green) 55%, transparent); }
+  70% { box-shadow: 0 0 0 9px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mb-intro .mb-logo-inner,
+  .mb-intro .mb-frame,
+  .mb-intro .fade {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .mb-intro .mb-pin,
+  .mb-intro .mb-blink {
+    animation: none;
+  }
+}
+
+/* safety net: force the resting (visible) state after the entrance window so throttled animations
+   can never leave the splash blank. */
+.mb-intro.settled .mb-frame {
+  opacity: 1 !important;
+}
+.mb-intro.settled .fade {
+  opacity: 1 !important;
+  transform: none !important;
+}
+.mb-intro.settled .mb-logo-inner {
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+@media (max-width: 720px) {
+  .mb-tagline,
+  .mb-presented {
+    display: none;
+  }
+  .mb-row-top {
+    justify-items: center;
+  }
+  .mb-row-bottom {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 14px;
+  }
+  .mb-quote {
+    justify-self: center;
+  }
+}
