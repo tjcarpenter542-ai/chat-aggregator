@@ -10,6 +10,12 @@ export function ChannelInput() {
   const [chatroomId, setChatroomId] = useState('')
   const [error, setError] = useState('')
 
+  // The error only flags the LAST empty/invalid submit, so any edit to the form dismisses it —
+  // typing in EITHER field or switching source. (The earlier fix only cleared it from the channel
+  // input, so e.g. an empty-Kick submit left "Enter a channel name" stuck while you typed the
+  // chatroom ID.) setError('') is a no-op re-render when already clear, so it's safe everywhere.
+  const clearError = () => setError('')
+
   const submit = (e) => {
     e.preventDefault()
     setError('')
@@ -44,7 +50,14 @@ export function ChannelInput() {
 
   return (
     <form className="channel-input" onSubmit={submit}>
-      <select value={source} onChange={(e) => setSource(e.target.value)} aria-label="source">
+      <select
+        value={source}
+        onChange={(e) => {
+          setSource(e.target.value)
+          clearError()
+        }}
+        aria-label="source"
+      >
         {SOURCES.map((s) => (
           <option key={s} value={s}>
             {sourceLabel(s)}
@@ -57,7 +70,7 @@ export function ChannelInput() {
         value={channel}
         onChange={(e) => {
           setChannel(e.target.value)
-          if (error) setError('') // the validation hint clears the moment the user starts typing
+          clearError() // the validation hint clears the moment the user starts typing
         }}
       />
       {source === 'kick' && (
@@ -66,7 +79,10 @@ export function ChannelInput() {
           className="chatroom-id"
           placeholder="Chatroom ID (required)"
           value={chatroomId}
-          onChange={(e) => setChatroomId(e.target.value)}
+          onChange={(e) => {
+            setChatroomId(e.target.value)
+            clearError()
+          }}
           title="Kick auto-lookup is unreliable behind Cloudflare, so the numeric chatroom ID is required."
         />
       )}
