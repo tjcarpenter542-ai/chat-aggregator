@@ -1,0 +1,199 @@
+/* "Not Financial Advice" disclaimer — the FIRST screen on load, ahead of the intro splash.
+   Ported from the Claude Design handoff, kept visually intact. Everything is scoped under .nfa and
+   keyframes are nfa-* prefixed so it can't touch the app or the intro. */
+.nfa {
+  --nfa-bg: #16191d;
+  --nfa-cream: #ece6d8;
+  --nfa-line: #ece6d8;
+  --nfa-fade-ms: 650ms;
+
+  position: fixed;
+  inset: 0;
+  z-index: 9500; /* above the intro splash (9000) and the app */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: var(--nfa-bg);
+  /* subtle vignette like a broadcast monitor */
+  background-image: radial-gradient(125% 130% at 50% 42%, #1b1f24 0%, #16191d 55%, #101316 100%);
+  color: var(--nfa-cream);
+  font-family: 'Archivo', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: opacity var(--nfa-fade-ms) cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nfa:focus {
+  outline: none;
+}
+.nfa.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nfa .wrap {
+  width: min(900px, calc(100vw - 96px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* staggered entrance */
+.nfa .reveal {
+  opacity: 0;
+  transform: translateY(9px);
+  animation: nfa-rise 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.nfa .d1 { animation-delay: 0.04s; }
+.nfa .d2 { animation-delay: 0.16s; }
+.nfa .d3 { animation-delay: 0.26s; }
+.nfa .d4 { animation-delay: 0.34s; }
+.nfa .d5 { animation-delay: 0.42s; }
+@keyframes nfa-rise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Header lockup ===== */
+.nfa .lockup {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  margin-bottom: clamp(36px, 6vh, 64px);
+}
+.nfa .nf-box {
+  border: 3px solid var(--nfa-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px clamp(22px, 3vw, 34px) 14px;
+}
+.nfa .nf {
+  font-family: 'Archivo Black', 'Archivo', sans-serif;
+  font-size: clamp(54px, 8.5vw, 86px);
+  line-height: 0.82;
+  letter-spacing: 0.01em;
+  /* cream letterforms with fine engraved hatch lines */
+  background-image: repeating-linear-gradient(
+    -6deg,
+    var(--nfa-cream) 0px,
+    var(--nfa-cream) 3px,
+    rgba(22, 25, 29, 0.62) 3px,
+    rgba(22, 25, 29, 0.62) 4.4px
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.nfa .right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.nfa .title-box {
+  border: 3px solid var(--nfa-line);
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px clamp(20px, 3vw, 38px);
+}
+.nfa .title {
+  font-family: 'Archivo Black', 'Archivo', sans-serif;
+  font-size: clamp(24px, 3.6vw, 40px);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.nfa .age-box {
+  border: 3px solid var(--nfa-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px 9px;
+}
+.nfa .age {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: clamp(14px, 1.9vw, 21px);
+  letter-spacing: 0.16em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* ===== Disclaimer body ===== */
+.nfa .copy {
+  width: 100%;
+  max-width: 880px;
+  font-style: italic;
+  font-weight: 700;
+  font-size: clamp(12px, 1.45vw, 16px);
+  line-height: 1.5;
+  text-align: justify;
+  color: var(--nfa-cream);
+  text-wrap: pretty;
+}
+.nfa .copy p {
+  margin: 0 0 1.1em;
+}
+.nfa .copy p:last-child {
+  margin-bottom: 0;
+}
+.nfa .copy p.indent {
+  padding-left: clamp(20px, 3.5vw, 40px);
+}
+
+/* ===== Footer hint + timer ===== */
+.nfa .skip {
+  margin-top: clamp(28px, 5vh, 48px);
+  font-family: 'Archivo', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(236, 230, 216, 0.42);
+  transition: color 0.3s ease;
+}
+.nfa:hover .skip {
+  color: rgba(236, 230, 216, 0.8);
+}
+.nfa .timer {
+  margin-top: 14px;
+  width: 220px;
+  height: 2px;
+  background: rgba(236, 230, 216, 0.14);
+  position: relative;
+  overflow: hidden;
+}
+.nfa .timer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  background: var(--nfa-cream);
+  animation: nfa-deplete var(--nfa-hold, 5000ms) linear forwards;
+  animation-delay: 0.5s;
+}
+@keyframes nfa-deplete {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nfa .reveal {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .nfa .timer::after {
+    animation: none;
+    transform: scaleX(0);
+  }
+  .nfa {
+    transition: opacity var(--nfa-fade-ms) linear;
+  }
+}
